@@ -2,7 +2,7 @@ from pathlib import Path
 
 from agent import approvals
 
-_CSS = Path(__file__).parent / "static" / "web" / "app.css"
+_STATIC = Path(__file__).parent / "static" / "web"
 
 
 def attention(request):
@@ -11,5 +11,5 @@ def attention(request):
 
 
 def asset_version(request):
-    """Verze CSS podle času změny souboru – prohlížeč tak nepoužije starou kopii z cache."""
-    return {"asset_version": int(_CSS.stat().st_mtime)}
+    """Verze CSS/JS podle poslední změny souborů – prohlížeč tak nepoužije starou kopii z cache."""
+    return {"asset_version": int(max(f.stat().st_mtime for f in _STATIC.iterdir()))}

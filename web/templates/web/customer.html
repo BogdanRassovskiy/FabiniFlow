@@ -1,4 +1,5 @@
 {% extends "web/base.html" %}
+{% load static %}
 {% block title %}Zákazník{% endblock %}
 {% block content %}
 <p class="lead">Zákazník píše obchodu běžnou řečí. Agent během rozhovoru vyplní požadavek a založí ho, až má všechny potřebné a ověřené údaje.</p>
@@ -13,13 +14,14 @@
       </div>
       <button type="button" class="ghost small" id="new-conv">Nový rozhovor</button>
     </header>
+    <div class="chat-mode" id="chat-mode" hidden></div>
     <div class="chat-log" id="chat-log">
       <div class="msg bot">{% if shop.language == "sk" %}Dobrý deň, som asistent obchodu {{ shop.name }}. S čím vám môžem pomôcť?{% else %}Dobrý den, jsem asistent obchodu {{ shop.name }}. S čím vám mohu pomoci?{% endif %}</div>
     </div>
-    <form class="chat-input" onsubmit="return false">
-      <button type="button" class="ghost" title="Přiložit snímek obrazovky" disabled>📎</button>
-      <input id="chat-text" placeholder="Napište zprávu…" disabled>
-      <button disabled>Odeslat</button>
+    <form class="chat-input" id="chat-form">
+      <button type="button" class="ghost" title="Přiložit snímek obrazovky – doplníme" disabled>📎</button>
+      <input id="chat-text" placeholder="Napište zprávu…" autocomplete="off">
+      <button>Odeslat</button>
     </form>
   </section>
 
@@ -44,7 +46,7 @@
       <p class="muted">Kliknutím vložíte do chatu.</p>
       <div class="chips">
         {% for s in sample_messages %}
-          <button type="button" class="chip" data-text="{{ s }}" disabled>{{ s }}</button>
+          <button type="button" class="chip" data-text="{{ s }}">{{ s }}</button>
         {% endfor %}
       </div>
 
@@ -59,70 +61,35 @@
   </div>
 </div>
 
-{{ request_types|json_script:"request-types" }}
+<script src="{% static 'web/chat.js' %}?v={{ asset_version }}"></script>
 <script>
 (function () {
   const SHOP = "{{ shop.shop_id }}";
-  const TYPES = JSON.parse(document.getElementById("request-types").textContent);
   const STORE_KEY = "fabini-conv-" + SHOP;
-  const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1];
   const log = document.getElementById("chat-log");
   const greeting = log.innerHTML;
   const body = document.getElementById("ticket-body");
   const emptyBody = body.innerHTML;
   const statusPill = document.getElementById("ticket-status");
+  const modeBar = document.getElementById("chat-mode");
+  const input = document.getElementById("chat-text");
   let convId = new URLSearchParams(location.search).get("c") || safeGet(STORE_KEY);
   let previous = {};
 
   function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function safeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
   async function startConversation() {
-    const res = await fetch("{% url 'web:chat_start' %}", {
-      method: "POST", headers: {"X-CSRFToken": csrf}, body: new URLSearchParams({shop: SHOP}),
-    });
+    const res = await FabiniChat.post("{% url 'web:chat_start' %}", {shop: SHOP});
     convId = (await res.json()).conversation_id;
     safeSet(STORE_KEY, convId);
     previous = {};
   }
 
-  function renderMessages(messages) {
-    log.innerHTML = greeting + messages.map((m) =>
-      `<div class="msg ${m.role === "customer" ? "user" : "bot"}">${esc(m.text)}</div>`).join("");
-    log.scrollTop = log.scrollHeight;
-  }
-
-  function fieldState(f) {
-    if (!f.value) return `<span class="field-state empty">${f.required ? "chybí" : "nepovinné"}</span>`;
-    if (f.verified === true) return `<span class="field-state ok">${f.verifiable ? "✓ ověřeno systémem" : "✓ od zákazníka"}</span>`;
-    if (f.verified === false) return `<span class="field-state bad">✗ ${esc(f.error)}</span>`;
-    return `<span class="field-state wait">⏳ ${esc(f.error || "ověřuje se")}</span>`;
-  }
-
-  function renderDraft(d) {
-    if (d.locked) { statusPill.className = "pill bad"; statusPill.textContent = "Zamčeno – předáno člověku"; }
-    else if (d.request_id) { statusPill.className = "pill ok"; statusPill.textContent = "Založeno " + d.request_id; }
-    else if (d.ready) { statusPill.className = "pill ok"; statusPill.textContent = "Připraveno k založení"; }
-    else if (d.type) { statusPill.className = "pill warn"; statusPill.textContent = "Doplňuje se"; }
-    else { statusPill.className = "pill neutral"; statusPill.textContent = "Čeká na zákazníka"; }
-
-    if (!d.type) { body.innerHTML = emptyBody; return; }
-    const pct = d.total ? Math.round(100 * d.filled / d.total) : 0;
-    body.innerHTML = `
-      <div class="ticket-type"><span class="muted">Typ</span><strong>${esc(d.type_label)}</strong></div>
-      <div class="progress"><div style="width:${pct}%"></div></div>
-      <small class="muted">${d.filled} / ${d.total} povinných údajů</small>
-      <dl class="ticket-fields">
-        ${d.fields.map((f) => `
-          <div class="ticket-field ${f.value ? "filled" : ""} ${previous[f.key] !== f.value && f.value ? "flash-in" : ""}">
-            <dt>${esc(f.label)}${f.required ? ' <span class="req">*</span>' : ""}</dt>
-            <dd>${f.value ? esc(f.value) : `<span class="placeholder">${esc(f.hint)}${f.choices.length ? " (" + f.choices.join(" / ") + ")" : ""}</span>`}</dd>
-            ${fieldState(f)}
-          </div>`).join("")}
-      </dl>`;
-    previous = Object.fromEntries(d.fields.map((f) => [f.key, f.value]));
-  }
+  const MODES = {
+    agent: ["", ""],
+    human: ["ok", "👤 Mluvíte s kolegou ze zákaznické podpory"],
+  };
 
   async function poll() {
     if (!convId) return;
@@ -131,10 +98,24 @@
       if (res.status === 404) { await startConversation(); return; }
       const state = await res.json();
       document.getElementById("conv-id").textContent = "· " + convId;
-      renderMessages(state.messages);
-      renderDraft(state.draft);
+      FabiniChat.renderMessages(log, state.messages, {greeting, perspective: "customer"});
+      previous = FabiniChat.renderDraft(body, statusPill, state.draft, previous, emptyBody);
+      const [tone, text] = MODES[state.mode] || MODES.agent;
+      modeBar.className = "chat-mode " + tone; modeBar.textContent = text; modeBar.hidden = !text;
     } catch (e) { /* zkusíme příště */ }
   }
+
+  document.getElementById("chat-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || !convId) return;
+    input.value = "";
+    await FabiniChat.post(`/api/chat/${convId}/message/`, {text});
+    poll();
+  });
+
+  document.querySelectorAll(".chip").forEach((chip) =>
+    chip.addEventListener("click", () => { input.value = chip.dataset.text; input.focus(); }));
 
   document.getElementById("new-conv").addEventListener("click", async () => {
     await startConversation(); log.innerHTML = greeting; body.innerHTML = emptyBody; poll();

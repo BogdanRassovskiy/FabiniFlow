@@ -146,3 +146,16 @@ button.small { padding: 4px 10px; font-size: 12px; }
 .field-state.empty { color: var(--muted); font-weight: 400; }
 .flash-in { animation: flash-in 1.2s ease-out; }
 @keyframes flash-in { 0% { background: var(--ok-bg); transform: scale(1.02); } 100% { background: transparent; transform: none; } }
+
+/* Předání chatu člověku */
+.chat-mode { padding: 8px 16px; font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--border); }
+.chat-mode.warn { background: var(--warn-bg); color: var(--warn); }
+.chat-mode.ok { background: var(--ok-bg); color: var(--ok); }
+.chat-mode[hidden] { display: none; }
+.msg.system { align-self: center; background: transparent; color: var(--muted); font-size: 12px; font-style: italic; text-align: center; max-width: 90%; }
+.msg .author { display: block; font-size: 11px; font-weight: 600; opacity: .75; margin-bottom: 2px; }
+.msg.bot.role-operator { background: var(--ok-bg); border: 1px solid var(--ok); }
+.chat.operator .msg.user.role-agent { background: var(--llm-bg); color: var(--text); }
+.chat.operator .msg.user.role-operator { background: var(--ok); color: #fff; border: 0; }
+.attention-item.handoff .recent { margin: 4px 0 0; padding-left: 12px; border-left: 3px solid var(--border); color: var(--muted); font-style: italic; }
+.live-chat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }

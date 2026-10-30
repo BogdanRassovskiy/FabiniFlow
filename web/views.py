@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
-from agent import approvals, conversations, request_types
+from agent import approvals, conversations, handoff, request_types
 from core import storage, trace
 from shops import repository
 from simulator import faults
@@ -71,6 +71,8 @@ def shop_admin(request):
         "attention": approvals.pending(shop_id),
         "requests": sorted(storage.list_all("requests", lambda r: r["shop_id"] == shop_id),
                            key=lambda r: r["created_at"], reverse=True),
+        "live_chats": storage.list_all(
+            "conversations", lambda c: c["shop_id"] == shop_id and c.get("mode") == handoff.HUMAN),
         "error": request.GET.get("error"),
     })
 
@@ -80,10 +82,12 @@ def decide_approval(request, item_id):
     shop_id = request.POST.get("shop", "")
     url = f"{reverse('web:shop_admin')}?shop={shop_id}"
     try:
-        approvals.decide(item_id, request.POST.get("decision", ""),
-                         note=request.POST.get("note", "").strip() or None)
+        item = approvals.decide(item_id, request.POST.get("decision", ""),
+                                note=request.POST.get("note", "").strip() or None)
     except (ValueError, storage.NotFound) as exc:
         return redirect(f"{url}&error={exc}")
+    if item["kind"] == "handoff" and item["status"] == approvals.APPROVED:
+        return redirect("web:operator_chat", conversation_id=item["conversation_id"])
     return redirect(url)
 
 
@@ -98,17 +102,71 @@ def chat_start(request):
 
 @require_GET
 def chat_state(request, conversation_id):
-    """Zprávy a rozpracovaný požadavek – UI je načítá periodicky."""
-    try:
-        conv = conversations.get(conversation_id)
-    except storage.NotFound:
-        raise Http404("Konverzace neexistuje")
-    return JsonResponse({
-        "conversation_id": conversation_id,
+    """Stav chatu pro zákazníka – bez prozrazení čekající žádosti o předání člověku."""
+    conv = _conversation_or_404(conversation_id)
+    return JsonResponse(_chat_payload(conv, handoff.customer_mode(conv)))
+
+
+@require_GET
+def operator_chat_state(request, conversation_id):
+    """Úplný stav chatu pro administraci (včetně režimu handoff_pending)."""
+    conv = _conversation_or_404(conversation_id)
+    return JsonResponse(_chat_payload(conv, handoff.mode(conv)))
+
+
+def _chat_payload(conv, mode):
+    return {
+        "conversation_id": conv["conversation_id"],
         "shop_id": conv["shop_id"],
+        "mode": mode,
         "messages": conv["messages"],
         "draft": conversations.draft_summary(conv),
+    }
+
+
+@require_POST
+def chat_message(request, conversation_id):
+    """Zpráva zákazníka. Odpověď agenta doplní běh agenta (agent loop)."""
+    _conversation_or_404(conversation_id)
+    text = request.POST.get("text", "").strip()
+    if not text:
+        return JsonResponse({"error": "Prázdná zpráva"}, status=400)
+    conversations.add_message(conversation_id, "customer", text[:2000])
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+def operator_message(request, conversation_id):
+    _conversation_or_404(conversation_id)
+    try:
+        handoff.operator_message(conversation_id, request.POST.get("text", "")[:2000])
+    except conversations.DraftError as exc:
+        return JsonResponse({"error": str(exc)}, status=409)
+    return JsonResponse({"ok": True})
+
+
+def operator_chat(request, conversation_id):
+    conv = _conversation_or_404(conversation_id)
+    if request.method == "POST":
+        try:
+            handoff.return_to_agent(conversation_id)
+        except conversations.DraftError:
+            pass
+        return redirect(f"{reverse('web:shop_admin')}?shop={conv['shop_id']}")
+    return render(request, "web/operator_chat.html", {
+        "tab": "shop_admin",
+        "subtab": "shop",
+        "conv": conv,
+        "shop": repository.shop(conv["shop_id"]),
+        "handoff": conv.get("handoff") or {},
     })
+
+
+def _conversation_or_404(conversation_id):
+    try:
+        return conversations.get(conversation_id)
+    except storage.NotFound:
+        raise Http404("Konverzace neexistuje")
 
 
 @require_GET

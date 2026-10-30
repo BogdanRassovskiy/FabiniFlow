@@ -19,13 +19,22 @@
     <article class="attention-item {{ a.kind }}">
       <div class="attention-main">
         <div class="attention-title">
-          {% if a.kind == "approval" %}<span class="pill bad">Schválení</span>{% else %}<span class="pill warn">Upozornění</span>{% endif %}
+          {% if a.kind == "approval" %}<span class="pill bad">Schválení</span>
+          {% elif a.kind == "handoff" %}<span class="pill bad">Předání člověku</span>
+          {% else %}<span class="pill warn">Upozornění</span>{% endif %}
           <strong>{{ a.title }}</strong>
         </div>
         {% if a.kind == "approval" %}
           <div class="mono">{{ a.tool }}({{ a.args|pretty_args }})</div>
         {% endif %}
-        <p class="reason"><span class="actor LLM">LLM</span> {{ a.reason }}</p>
+        {% if a.kind == "handoff" %}
+          <p class="reason"><span class="actor {{ a.requested_by }}">{{ a.requested_by }}</span> {{ a.reason }}</p>
+          {% for m in a.recent_messages %}<p class="recent">„{{ m }}“</p>{% endfor %}
+        {% elif a.kind == "alert" %}
+          <p class="reason"><span class="actor SCRIPT">SCRIPT</span> {{ a.reason }}</p>
+        {% else %}
+          <p class="reason"><span class="actor LLM">LLM</span> {{ a.reason }}</p>
+        {% endif %}
         <small class="muted">
           {{ a.created_at|dt }}
           {% if a.order_id %} · objednávka <span class="mono">{{ a.order_id }}</span>{% endif %}
@@ -39,6 +48,10 @@
           <input name="note" placeholder="Poznámka (nepovinné)">
           <button name="decision" value="approve">Schválit</button>
           <button name="decision" value="deny" class="danger">Zamítnout</button>
+        {% elif a.kind == "handoff" %}
+          <input name="note" placeholder="Poznámka pro agenta (nepovinné)">
+          <button name="decision" value="accept">Převzít chat</button>
+          <button name="decision" value="decline" class="ghost">Odmítnout – agent pokračuje</button>
         {% else %}
           <button name="decision" value="ack" class="ghost">Beru na vědomí</button>
         {% endif %}
@@ -48,6 +61,19 @@
     <p class="muted">Nic nečeká na rozhodnutí. Jakmile agent narazí na rizikovou akci, objeví se tady.</p>
   {% endfor %}
 </section>
+
+{% if live_chats %}
+<section class="card">
+  <h2>Živé chaty se zákazníky</h2>
+  {% for c in live_chats %}
+    <div class="live-chat">
+      <div><span class="mono">{{ c.conversation_id }}</span>
+        <small class="muted">· {{ c.messages|length }} zpráv · {{ c.handoff.reason|truncatechars:80 }}</small></div>
+      <a href="{% url 'web:operator_chat' c.conversation_id %}">Otevřít chat →</a>
+    </div>
+  {% endfor %}
+</section>
+{% endif %}
 
 <section class="card agent">
   <h2>AI agent</h2>

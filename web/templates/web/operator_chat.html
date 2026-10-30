@@ -1,0 +1,79 @@
+{% extends "web/base.html" %}
+{% load static %}
+{% block title %}Chat se zákazníkem{% endblock %}
+{% block content %}
+{% include "web/_admin_subnav.html" %}
+<p class="lead">
+  <a href="{% url 'web:shop_admin' %}?shop={{ shop.shop_id }}">← {{ shop.name }}</a> ·
+  Převzatý chat <span class="mono">{{ conv.conversation_id }}</span>.
+  Agent v tomto chatu mlčí, dokud ho nevrátíte.
+</p>
+{% if handoff.reason %}
+  <div class="flash warn"><strong>Důvod předání</strong>
+    (<span class="actor {{ handoff.requested_by }}">{{ handoff.requested_by }}</span>): {{ handoff.reason }}</div>
+{% endif %}
+
+<div class="chat-layout">
+  <section class="card chat operator">
+    <header class="chat-head">
+      <div><strong>Zákazník · {{ shop.name }}</strong> <small class="muted" id="op-mode"></small></div>
+      <form method="post">
+        {% csrf_token %}
+        <button class="ghost small" onclick="return confirm('Vrátit konverzaci virtuálnímu asistentovi?')">Vrátit agentovi</button>
+      </form>
+    </header>
+    <div class="chat-log" id="chat-log"></div>
+    <form class="chat-input" id="op-form">
+      <input id="op-text" placeholder="Odpovězte zákazníkovi…" autocomplete="off">
+      <button>Odeslat</button>
+    </form>
+  </section>
+
+  <div class="side">
+    <section class="card request-draft">
+      <header class="ticket-head">
+        <h2>Co agent zjistil</h2>
+        <span class="pill neutral" id="ticket-status"></span>
+      </header>
+      <div id="ticket-body"><p class="muted">Agent zatím neurčil typ požadavku.</p></div>
+    </section>
+  </div>
+</div>
+
+<script src="{% static 'web/chat.js' %}?v={{ asset_version }}"></script>
+<script>
+(function () {
+  const CONV = "{{ conv.conversation_id }}";
+  const log = document.getElementById("chat-log");
+  const body = document.getElementById("ticket-body");
+  const emptyBody = body.innerHTML;
+  const pill = document.getElementById("ticket-status");
+  const form = document.getElementById("op-form");
+  const input = document.getElementById("op-text");
+  let previous = {};
+
+  async function poll() {
+    try {
+      const state = await (await fetch(`/api/operator/chat/${CONV}/`, {cache: "no-store"})).json();
+      FabiniChat.renderMessages(log, state.messages, {perspective: "operator"});
+      previous = FabiniChat.renderDraft(body, pill, state.draft, previous, emptyBody);
+      const active = state.mode === "human";
+      input.disabled = !active;
+      form.querySelector("button").disabled = !active;
+      document.getElementById("op-mode").textContent = active ? "· chat vedete vy" : "· chat už vede agent";
+    } catch (e) { /* zkusíme příště */ }
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    await FabiniChat.post(`/api/chat/${CONV}/operator/`, {text});
+    poll();
+  });
+
+  poll(); setInterval(poll, 2000);
+})();
+</script>
+{% endblock %}

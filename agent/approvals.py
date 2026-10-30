@@ -1,9 +1,11 @@
 """
 Fronta věcí, které čekají na člověka.
 
-Dva druhy položek:
+Tři druhy položek:
 - approval – agent chce provést rizikovou akci (retry_sync, create_ticket)
              a policy v kódu ji zastavila, dokud ji člověk neschválí / nezamítne;
+- handoff  – zákazník v chatu chce mluvit s člověkem; administrace chat
+             převezme, nebo odmítne a agent pokračuje (viz agent.handoff);
 - alert    – důležitá situace, kterou má člověk vidět (agent eskaloval,
              běh selhal, systém je nedostupný). Stačí ji vzít na vědomí.
 
@@ -71,6 +73,16 @@ def raise_alert(
     return item
 
 
+def request_handoff(
+    *, conversation_id: str, reason: str, recent_messages: list[str], shop_id: str,
+    order_id: str | None, run_id: str | None, requested_by: str,
+) -> dict[str, Any]:
+    return _create("handoff", conversation_id=conversation_id, reason=reason,
+                   recent_messages=recent_messages, requested_by=requested_by,
+                   shop_id=shop_id, order_id=order_id, run_id=run_id,
+                   title="Zákazník chce mluvit s člověkem")
+
+
 def pending(shop_id: str | None = None) -> list[dict[str, Any]]:
     items = storage.list_all(
         COLLECTION, lambda a: a["status"] == PENDING and (shop_id is None or a["shop_id"] == shop_id))
@@ -85,23 +97,35 @@ def pending_counts() -> dict[str, Any]:
 
 
 def decide(item_id: str, decision: str, *, by: str = "admin", note: str | None = None) -> dict[str, Any]:
-    """decision: approve | deny | ack. Rozhodnout lze jen jednou."""
+    """decision: approve | deny (approval), accept | decline (handoff), ack (alert). Jen jednou."""
     item = storage.get(COLLECTION, "id", item_id)
     if item["status"] != PENDING:
         raise ValueError("O této položce už bylo rozhodnuto")
 
-    allowed = {"approval": {"approve": APPROVED, "deny": DENIED}, "alert": {"ack": ACKNOWLEDGED}}
+    allowed = {
+        "approval": {"approve": APPROVED, "deny": DENIED},
+        "handoff": {"accept": APPROVED, "decline": DENIED},
+        "alert": {"ack": ACKNOWLEDGED},
+    }
     status = allowed[item["kind"]].get(decision)
     if status is None:
         raise ValueError(f"Neplatné rozhodnutí {decision!r} pro {item['kind']}")
 
     item = storage.update(COLLECTION, "id", item_id,
                           {"status": status, "decided_at": _now(), "decided_by": by, "note": note})
-    messages = {
-        APPROVED: f"Člověk schválil akci {item.get('tool')}",
-        DENIED: f"Člověk zamítl akci {item.get('tool')}",
-        ACKNOWLEDGED: f"Člověk vzal na vědomí: {item['title']}",
-    }
+    if item["kind"] == "handoff":
+        messages = {APPROVED: "Operátor převzal chat se zákazníkem",
+                    DENIED: "Operátor odmítl převzít chat – agent pokračuje"}
+    else:
+        messages = {
+            APPROVED: f"Člověk schválil akci {item.get('tool')}",
+            DENIED: f"Člověk zamítl akci {item.get('tool')}",
+            ACKNOWLEDGED: f"Člověk vzal na vědomí: {item['title']}",
+        }
     trace.record(trace.Actor.HUMAN, f"approval_{status}", messages[status] + (f" – {note}" if note else ""),
                  run_id=item.get("run_id"), order_id=item.get("order_id"), data={"approval_id": item_id})
+    if item["kind"] == "handoff":
+        from agent import handoff  # handoff importuje tento modul
+
+        handoff.apply_decision(item["conversation_id"], accepted=status == APPROVED, note=note)
     return item

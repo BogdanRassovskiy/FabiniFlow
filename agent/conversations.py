@@ -47,6 +47,8 @@ def start(shop_id: str) -> dict[str, Any]:
         "messages": [],
         "draft": _empty_draft(),
         "request_id": None,
+        "mode": "agent",  # agent | handoff_pending | human (viz agent.handoff)
+        "handoff": None,
     }
     return storage.insert(COLLECTION, conv)
 
@@ -55,14 +57,20 @@ def get(conversation_id: str) -> dict[str, Any]:
     return storage.get(COLLECTION, "conversation_id", conversation_id)
 
 
-def _save(conv: dict[str, Any]) -> dict[str, Any]:
+def save(conv: dict[str, Any]) -> dict[str, Any]:
     return storage.update(COLLECTION, "conversation_id", conv["conversation_id"], conv)
 
 
 def add_message(conversation_id: str, role: str, text: str, attachment: str | None = None) -> dict[str, Any]:
+    """role: customer | agent | operator | system (systémová poznámka viditelná oběma stranám)."""
     conv = get(conversation_id)
     conv["messages"].append({"role": role, "text": text, "attachment": attachment, "ts": _now()})
-    return _save(conv)
+    conv = save(conv)
+    if role == "customer":
+        from agent import handoff  # handoff importuje tento modul
+
+        handoff.check_explicit_request(conv, text)
+    return get(conversation_id)
 
 
 # --- Draft požadavku ---------------------------------------------------------
@@ -77,9 +85,9 @@ def set_request_type(conversation_id: str, type_key: str, *, run_id: str | None 
     draft["fields"] = {k: v for k, v in draft["fields"].items() if k in keep}
     draft["type"] = type_key
     _verify_all(conv, run_id)
-    _save(conv)
+    save(conv)
     trace.record(trace.Actor.LLM, "request_type_set", f"Typ požadavku určen: {rtype.label}",
-                 run_id=run_id, order_id=_order_id(conv), data={"conversation_id": conversation_id})
+                 run_id=run_id, order_id=order_id_of(conv), data={"conversation_id": conversation_id})
     return draft_summary(conv)
 
 
@@ -104,9 +112,9 @@ def update_request_field(conversation_id: str, key: str, value: str, *,
 
     draft["fields"][key] = {"value": value, "source": source, "verified": None, "error": None, "updated_at": _now()}
     trace.record(trace.Actor.LLM, "request_field_set", f"{spec.label}: {value}",
-                 run_id=run_id, order_id=_order_id(conv), data={"conversation_id": conversation_id, "field": key})
+                 run_id=run_id, order_id=order_id_of(conv), data={"conversation_id": conversation_id, "field": key})
     _verify_all(conv, run_id)
-    _save(conv)
+    save(conv)
     return draft_summary(conv)
 
 
@@ -119,7 +127,7 @@ def submit_request(conversation_id: str, *, summary: str, priority: str = "norma
         trace.record(trace.Actor.SCRIPT, "request_submit_blocked",
                      "Odeslání zablokováno – požadavek není kompletní nebo ověřený: "
                      + ", ".join(state["missing"] or ["typ"]),
-                     run_id=run_id, order_id=_order_id(conv))
+                     run_id=run_id, order_id=order_id_of(conv))
         raise DraftError("Požadavek nelze odeslat, chybí nebo nejsou ověřena pole: "
                          + ", ".join(state["missing"] or ["type"]))
 
@@ -138,7 +146,7 @@ def submit_request(conversation_id: str, *, summary: str, priority: str = "norma
     storage.insert(REQUESTS, request)
     conv["status"] = "submitted"
     conv["request_id"] = request["request_id"]
-    _save(conv)
+    save(conv)
     trace.record(trace.Actor.SCRIPT, "request_submitted",
                  f"Požadavek {request['request_id']} ({request['type_label']}) založen – všechna povinná pole ověřena",
                  run_id=run_id, order_id=request["fields"].get("order_id"),
@@ -181,7 +189,7 @@ def _mark(conv, key, ok: bool, error: str | None, run_id) -> None:
     label = {"order_id": "Číslo objednávky", "email": "E-mail"}[key]
     trace.record(trace.Actor.SCRIPT, "field_verified" if ok else "field_verification_failed",
                  f"{label} {'ověřen' if ok else 'neověřen'}: {f['value']}" + ("" if ok else f" – {error}"),
-                 run_id=run_id, order_id=_order_id(conv))
+                 run_id=run_id, order_id=order_id_of(conv))
 
 
 def _email_failed(conv, run_id) -> None:
@@ -191,9 +199,9 @@ def _email_failed(conv, run_id) -> None:
         draft["locked"] = True
         approvals.raise_alert(
             title="Opakovaně neúspěšné ověření zákazníka v chatu",
-            reason=f"{MAX_EMAIL_FAILURES}× nesouhlasil e-mail s objednávkou {_order_id(conv)}. "
+            reason=f"{MAX_EMAIL_FAILURES}× nesouhlasil e-mail s objednávkou {order_id_of(conv)}. "
                    "Konverzace je zamčená – může jít o pokus získat cizí údaje.",
-            shop_id=conv["shop_id"], order_id=_order_id(conv), run_id=run_id)
+            shop_id=conv["shop_id"], order_id=order_id_of(conv), run_id=run_id)
 
 
 def _ensure_editable(conv) -> None:
@@ -203,7 +211,7 @@ def _ensure_editable(conv) -> None:
         raise DraftError("Konverzace je zamčená po opakovaném neúspěšném ověření – předej ji člověku.")
 
 
-def _order_id(conv) -> str | None:
+def order_id_of(conv) -> str | None:
     f = conv["draft"]["fields"].get("order_id")
     return f["value"] if f else None
 
