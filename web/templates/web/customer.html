@@ -1,21 +1,20 @@
 {% extends "web/base.html" %}
 {% block title %}Zákazník{% endblock %}
 {% block content %}
-<p class="lead">Zákazník píše obchodu běžnou řečí. Agent z konverzace vytvoří dotaz, reklamaci nebo incident a začne ho řešit.</p>
+<p class="lead">Zákazník píše obchodu běžnou řečí. Agent během rozhovoru vyplní požadavek a založí ho, až má všechny potřebné a ověřené údaje.</p>
 {% include "web/_shop_switch.html" %}
 
 <div class="chat-layout">
   <section class="card chat">
     <header class="chat-head">
-      <strong>Podpora {{ shop.name }}</strong>
-      <small class="muted">obvykle odpovídáme během pár vteřin</small>
+      <div>
+        <strong>Podpora {{ shop.name }}</strong>
+        <small class="muted" id="conv-id"></small>
+      </div>
+      <button type="button" class="ghost small" id="new-conv">Nový rozhovor</button>
     </header>
     <div class="chat-log" id="chat-log">
-      {% if shop.language == "sk" %}
-        <div class="msg bot">Dobrý deň, som asistent obchodu {{ shop.name }}. S čím vám môžem pomôcť?</div>
-      {% else %}
-        <div class="msg bot">Dobrý den, jsem asistent obchodu {{ shop.name }}. S čím vám mohu pomoci?</div>
-      {% endif %}
+      <div class="msg bot">{% if shop.language == "sk" %}Dobrý deň, som asistent obchodu {{ shop.name }}. S čím vám môžem pomôcť?{% else %}Dobrý den, jsem asistent obchodu {{ shop.name }}. S čím vám mohu pomoci?{% endif %}</div>
     </div>
     <form class="chat-input" onsubmit="return false">
       <button type="button" class="ghost" title="Přiložit snímek obrazovky" disabled>📎</button>
@@ -24,22 +23,124 @@
     </form>
   </section>
 
-  <aside class="card">
-    <h2>Ukázkové zprávy</h2>
-    <p class="muted">Kliknutím vložíte do chatu.</p>
-    <div class="chips">
-      {% for s in sample_messages %}
-        <button type="button" class="chip" data-text="{{ s }}" disabled>{{ s }}</button>
-      {% endfor %}
-    </div>
+  <div class="side">
+    <section class="card request-draft" id="ticket">
+      <header class="ticket-head">
+        <h2>Rozpracovaný požadavek</h2>
+        <span class="pill neutral" id="ticket-status">Čeká na zákazníka</span>
+      </header>
+      <div id="ticket-body">
+        <p class="muted">Typ požadavku zatím není určen. Agent ho rozpozná z první zprávy zákazníka.</p>
+        <div class="type-list">
+          {% for key, t in request_types.items %}
+            <span class="type-chip" data-type="{{ key }}" title="{{ t.description }}">{{ t.label }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
 
-    <h2 class="mt">Snímky k přiložení</h2>
-    <p class="muted">Simulace – zákazník vybírá z připravených snímků obrazovky.</p>
-    <div class="shots">
-      {% for s in sample_screenshots %}
-        <figure class="shot"><div class="shot-placeholder">obrázek bude doplněn</div><figcaption>{{ s }}</figcaption></figure>
-      {% endfor %}
-    </div>
-  </aside>
+    <section class="card">
+      <h2>Ukázkové zprávy</h2>
+      <p class="muted">Kliknutím vložíte do chatu.</p>
+      <div class="chips">
+        {% for s in sample_messages %}
+          <button type="button" class="chip" data-text="{{ s }}" disabled>{{ s }}</button>
+        {% endfor %}
+      </div>
+
+      <h2 class="mt">Snímky k přiložení</h2>
+      <p class="muted">Simulace – zákazník vybírá z připravených snímků obrazovky.</p>
+      <div class="shots">
+        {% for s in sample_screenshots %}
+          <figure class="shot"><div class="shot-placeholder">obrázek bude doplněn</div><figcaption>{{ s }}</figcaption></figure>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
 </div>
+
+{{ request_types|json_script:"request-types" }}
+<script>
+(function () {
+  const SHOP = "{{ shop.shop_id }}";
+  const TYPES = JSON.parse(document.getElementById("request-types").textContent);
+  const STORE_KEY = "fabini-conv-" + SHOP;
+  const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1];
+  const log = document.getElementById("chat-log");
+  const greeting = log.innerHTML;
+  const body = document.getElementById("ticket-body");
+  const emptyBody = body.innerHTML;
+  const statusPill = document.getElementById("ticket-status");
+  let convId = new URLSearchParams(location.search).get("c") || safeGet(STORE_KEY);
+  let previous = {};
+
+  function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function safeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+  async function startConversation() {
+    const res = await fetch("{% url 'web:chat_start' %}", {
+      method: "POST", headers: {"X-CSRFToken": csrf}, body: new URLSearchParams({shop: SHOP}),
+    });
+    convId = (await res.json()).conversation_id;
+    safeSet(STORE_KEY, convId);
+    previous = {};
+  }
+
+  function renderMessages(messages) {
+    log.innerHTML = greeting + messages.map((m) =>
+      `<div class="msg ${m.role === "customer" ? "user" : "bot"}">${esc(m.text)}</div>`).join("");
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function fieldState(f) {
+    if (!f.value) return `<span class="field-state empty">${f.required ? "chybí" : "nepovinné"}</span>`;
+    if (f.verified === true) return `<span class="field-state ok">${f.verifiable ? "✓ ověřeno systémem" : "✓ od zákazníka"}</span>`;
+    if (f.verified === false) return `<span class="field-state bad">✗ ${esc(f.error)}</span>`;
+    return `<span class="field-state wait">⏳ ${esc(f.error || "ověřuje se")}</span>`;
+  }
+
+  function renderDraft(d) {
+    if (d.locked) { statusPill.className = "pill bad"; statusPill.textContent = "Zamčeno – předáno člověku"; }
+    else if (d.request_id) { statusPill.className = "pill ok"; statusPill.textContent = "Založeno " + d.request_id; }
+    else if (d.ready) { statusPill.className = "pill ok"; statusPill.textContent = "Připraveno k založení"; }
+    else if (d.type) { statusPill.className = "pill warn"; statusPill.textContent = "Doplňuje se"; }
+    else { statusPill.className = "pill neutral"; statusPill.textContent = "Čeká na zákazníka"; }
+
+    if (!d.type) { body.innerHTML = emptyBody; return; }
+    const pct = d.total ? Math.round(100 * d.filled / d.total) : 0;
+    body.innerHTML = `
+      <div class="ticket-type"><span class="muted">Typ</span><strong>${esc(d.type_label)}</strong></div>
+      <div class="progress"><div style="width:${pct}%"></div></div>
+      <small class="muted">${d.filled} / ${d.total} povinných údajů</small>
+      <dl class="ticket-fields">
+        ${d.fields.map((f) => `
+          <div class="ticket-field ${f.value ? "filled" : ""} ${previous[f.key] !== f.value && f.value ? "flash-in" : ""}">
+            <dt>${esc(f.label)}${f.required ? ' <span class="req">*</span>' : ""}</dt>
+            <dd>${f.value ? esc(f.value) : `<span class="placeholder">${esc(f.hint)}${f.choices.length ? " (" + f.choices.join(" / ") + ")" : ""}</span>`}</dd>
+            ${fieldState(f)}
+          </div>`).join("")}
+      </dl>`;
+    previous = Object.fromEntries(d.fields.map((f) => [f.key, f.value]));
+  }
+
+  async function poll() {
+    if (!convId) return;
+    try {
+      const res = await fetch(`/api/chat/${convId}/`, {cache: "no-store"});
+      if (res.status === 404) { await startConversation(); return; }
+      const state = await res.json();
+      document.getElementById("conv-id").textContent = "· " + convId;
+      renderMessages(state.messages);
+      renderDraft(state.draft);
+    } catch (e) { /* zkusíme příště */ }
+  }
+
+  document.getElementById("new-conv").addEventListener("click", async () => {
+    await startConversation(); log.innerHTML = greeting; body.innerHTML = emptyBody; poll();
+  });
+
+  (async () => { if (!convId) await startConversation(); poll(); setInterval(poll, 2000); })();
+})();
+</script>
 {% endblock %}

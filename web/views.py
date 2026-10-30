@@ -1,9 +1,10 @@
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
-from agent import approvals
+from agent import approvals, conversations, request_types
 from core import storage, trace
 from shops import repository
 from simulator import faults
@@ -34,6 +35,7 @@ SAMPLE_SCREENSHOTS = [
 ]
 
 
+@ensure_csrf_cookie
 def customer(request):
     shops = repository.shops()
     shop_id = request.GET.get("shop") or shops[0]["shop_id"]
@@ -43,6 +45,7 @@ def customer(request):
         "shop": _shop_or_404(shop_id),
         "sample_messages": SAMPLE_MESSAGES.get(shop_id, []),
         "sample_screenshots": SAMPLE_SCREENSHOTS,
+        "request_types": request_types.as_dict(),
     })
 
 
@@ -66,6 +69,8 @@ def shop_admin(request):
         "stock": stock,
         "tickets": storage.list_all("tickets", lambda t: t.get("shop_id") == shop_id),
         "attention": approvals.pending(shop_id),
+        "requests": sorted(storage.list_all("requests", lambda r: r["shop_id"] == shop_id),
+                           key=lambda r: r["created_at"], reverse=True),
         "error": request.GET.get("error"),
     })
 
@@ -80,6 +85,30 @@ def decide_approval(request, item_id):
     except (ValueError, storage.NotFound) as exc:
         return redirect(f"{url}&error={exc}")
     return redirect(url)
+
+
+@require_POST
+def chat_start(request):
+    try:
+        conv = conversations.start(request.POST.get("shop", ""))
+    except storage.NotFound:
+        raise Http404("Obchod neexistuje")
+    return JsonResponse({"conversation_id": conv["conversation_id"]}, status=201)
+
+
+@require_GET
+def chat_state(request, conversation_id):
+    """Zprávy a rozpracovaný požadavek – UI je načítá periodicky."""
+    try:
+        conv = conversations.get(conversation_id)
+    except storage.NotFound:
+        raise Http404("Konverzace neexistuje")
+    return JsonResponse({
+        "conversation_id": conversation_id,
+        "shop_id": conv["shop_id"],
+        "messages": conv["messages"],
+        "draft": conversations.draft_summary(conv),
+    })
 
 
 @require_GET

@@ -59,6 +59,30 @@
 </section>
 
 <section class="card">
+  <h2>Požadavky zákazníků</h2>
+  {% if requests %}
+    <table>
+      <thead><tr><th>Číslo</th><th>Založeno</th><th>Typ</th><th>Objednávka</th><th>Shrnutí agenta</th><th>Priorita</th><th>Stav</th></tr></thead>
+      <tbody>
+        {% for r in requests %}
+          <tr>
+            <td class="mono">{{ r.request_id }}</td>
+            <td>{{ r.created_at|dt }}</td>
+            <td>{{ r.type_label }}</td>
+            <td class="mono">{{ r.fields.order_id|default:"–" }}</td>
+            <td>{{ r.summary }}<br><small class="muted">{{ r.fields.email }}</small></td>
+            <td><span class="pill {% if r.priority == 'high' %}bad{% else %}neutral{% endif %}">{{ r.priority }}</span></td>
+            <td><span class="pill neutral">{{ r.status }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Zatím žádné požadavky. Vznikají z rozhovorů v zákaznickém chatu.</p>
+  {% endif %}
+</section>
+
+<section class="card">
   <h2>Objednávky</h2>
   <table>
     <thead>

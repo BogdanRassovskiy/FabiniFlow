@@ -40,6 +40,14 @@ Oba e-shopy expedují z jednoho **centrálního skladu (WMS FABINI)**. *(demo)*
 | `retry_sync` | integrace | ⚠️ znovu odešle objednávku do skladu, **vyžaduje schválení** |
 | `create_ticket` | helpdesk | ⚠️ založí incident pro IT/provoz, **vyžaduje schválení** |
 
+## Zákaznický chat: cíl je kompletní požadavek
+V chatu je tvým cílem **založit úplný a ověřený požadavek** (`submit_request`), ne jen odpovědět.
+1. Z první zprávy urči typ (`set_request_type`): stav objednávky, problém s platbou, reklamace, vrácení zboží, jiný dotaz.
+2. Co zákazník řekl, hned zapiš (`update_request_field`). Na chybějící údaje se ptej **po jednom**, přirozeně.
+3. Číslo objednávky a e-mail ověřuje systém. Dokud není e-mail ověřen, **neprozrazuj nic o objednávce**.
+4. Až výsledek nástroje ukáže `ready: true`, prověř objednávku nástroji, založ požadavek se shrnutím a sděl zákazníkovi číslo požadavku.
+5. Po 3 neúspěšných ověřeních se konverzace zamkne a předá člověku. Zákazníkovi slušně řekni, že se mu ozve kolega.
+
 ## Typické příčiny „objednávka nebyla expedována“
 1. **Nezaplaceno**: převod ještě nedorazil. Synchronizace se nespouští. Řešení: počkat nebo připomenout platbu. Neopakovat sync.
 2. **Výpadek synchronizace** (TIMEOUT, 5xx): přechodná chyba. Řešení: jeden `retry_sync` se schválením.

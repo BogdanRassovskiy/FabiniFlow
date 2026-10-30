@@ -10,6 +10,8 @@ urlpatterns = [
     path("administrace/", views.shop_admin, name="shop_admin"),
     path("administrace/simulace/", views.simulation, name="simulation"),
     path("administrace/pozadavky/<str:item_id>/", views.decide_approval, name="decide_approval"),
+    path("api/chat/start/", views.chat_start, name="chat_start"),
+    path("api/chat/<str:conversation_id>/", views.chat_state, name="chat_state"),
     path("api/attention/", views.attention_api, name="attention_api"),
     path("trace/", views.trace_log, name="trace"),
 ]
