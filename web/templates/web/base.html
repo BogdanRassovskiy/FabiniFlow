@@ -16,6 +16,12 @@
               {% if not attention_counts.total %}hidden{% endif %}>{{ attention_counts.total }}</span></a>
       <a href="{% url 'web:trace' %}" class="{% if tab == 'trace' %}active{% endif %}">Trace log</a>
     </nav>
+    <div class="model-picker">
+      {% csrf_token %}
+      <label for="model-select" class="muted">Model</label>
+      <select id="model-select" title="Model agenta (OpenRouter) – jen modely s tool calling"></select>
+      <span class="pill bad" id="no-key" hidden>Chybí API klíč</span>
+    </div>
   </header>
   <main>
     {% block content %}{% endblock %}
@@ -40,6 +46,25 @@
         } catch (e) { /* server dočasně nedostupný – zkusíme příště */ }
       }
       setInterval(poll, 3000);
+    })();
+
+    // Výběr modelu agenta (uloží se na serveru, platí pro další běhy).
+    (async function () {
+      const select = document.getElementById("model-select");
+      try {
+        const data = await (await fetch("{% url 'web:models_api' %}")).json();
+        document.getElementById("no-key").hidden = data.has_key;
+        const option = (m) => `<option value="${m.id}" ${m.id === data.current ? "selected" : ""}>` +
+          `${m.label} · $${m.price}${m.vision ? " · 🖼" : ""}</option>`;
+        const rec = data.models.filter((m) => m.recommended), rest = data.models.filter((m) => !m.recommended);
+        select.innerHTML = `<optgroup label="Doporučené">${rec.map(option).join("")}</optgroup>` +
+          `<optgroup label="Další modely s nástroji">${rest.map(option).join("")}</optgroup>`;
+        if (!data.models.some((m) => m.id === data.current)) select.insertAdjacentHTML("afterbegin", option({id: data.current, label: data.current, price: "?"}));
+      } catch (e) { select.innerHTML = "<option>nedostupné</option>"; }
+      select.addEventListener("change", () => fetch("{% url 'web:models_api' %}", {
+        method: "POST", body: new URLSearchParams({model: select.value}),
+        headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value},
+      }));
     })();
   </script>
 </body>

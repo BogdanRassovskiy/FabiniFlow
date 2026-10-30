@@ -1,10 +1,11 @@
+from django.conf import settings
 from django.http import Http404, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
-from agent import approvals, conversations, handoff, request_types
+from agent import approvals, conversations, handoff, llm, request_types, runner
 from core import storage, trace
 from shops import repository
 from simulator import faults
@@ -26,6 +27,14 @@ SAMPLE_MESSAGES = {
         "Kde je moja objednávka 100244?",
     ],
 }
+
+# Ukázkové provozní požadavky pro konzoli agenta v administraci.
+AGENT_EXAMPLES = [
+    "Zjisti, proč objednávka 100245 nebyla expedována, a pokud je problém v synchronizaci, navrhni další postup.",
+    "Proč objednávka 100247 stále není ve skladu? Vyřeš to.",
+    "Zákazník se ptá na objednávku 100248 – kdy bude odeslána?",
+    "Zkontroluj objednávku 100999.",
+]
 
 # TODO: vygenerovat skutečné obrázky (viz Trello) – zatím jen popisky.
 SAMPLE_SCREENSHOTS = [
@@ -69,6 +78,7 @@ def shop_admin(request):
         "stock": stock,
         "tickets": storage.list_all("tickets", lambda t: t.get("shop_id") == shop_id),
         "attention": approvals.pending(shop_id),
+        "agent_examples": AGENT_EXAMPLES,
         "requests": sorted(storage.list_all("requests", lambda r: r["shop_id"] == shop_id),
                            key=lambda r: r["created_at"], reverse=True),
         "live_chats": storage.list_all(
@@ -115,13 +125,57 @@ def operator_chat_state(request, conversation_id):
 
 
 def _chat_payload(conv, mode):
+    typing = mode == handoff.AGENT and any(
+        r["status"] == runner.RUNNING
+        for r in storage.list_all("runs", lambda r: r.get("conversation_id") == conv["conversation_id"]))
     return {
         "conversation_id": conv["conversation_id"],
         "shop_id": conv["shop_id"],
         "mode": mode,
+        "typing": typing,
         "messages": conv["messages"],
         "draft": conversations.draft_summary(conv),
     }
+
+
+@require_POST
+def agent_run_start(request):
+    text = request.POST.get("text", "").strip()
+    if not text:
+        return JsonResponse({"error": "Zadejte požadavek"}, status=400)
+    run = runner.start_ops_run(text[:2000], shop_id=request.POST.get("shop") or None)
+    return JsonResponse({"run_id": run["run_id"]}, status=201)
+
+
+@require_GET
+def agent_run_state(request, run_id):
+    try:
+        run = runner.get(run_id)
+    except storage.NotFound:
+        raise Http404("Běh neexistuje")
+    return JsonResponse({
+        "run_id": run_id,
+        "status": run["status"],
+        "model": run["model"],
+        "llm_calls": run["llm_calls"],
+        "usage": run["usage"],
+        "input": run.get("input"),
+        "result": run["result"],
+        "error": run["error"],
+        "pending": run["pending"],
+        "trace": list(reversed(trace.entries(run_id=run_id))),
+    })
+
+
+def models_api(request):
+    if request.method == "POST":
+        model = request.POST.get("model", "").strip()
+        if model:
+            llm.set_model(model)
+            trace.record(trace.Actor.HUMAN, "model_changed", f"Model agenta změněn na {model}")
+        return JsonResponse({"current": llm.current_model()})
+    return JsonResponse({"current": llm.current_model(), "has_key": bool(settings.OPENROUTER_API_KEY),
+                         "models": llm.available_models()})
 
 
 @require_POST
@@ -132,6 +186,7 @@ def chat_message(request, conversation_id):
     if not text:
         return JsonResponse({"error": "Prázdná zpráva"}, status=400)
     conversations.add_message(conversation_id, "customer", text[:2000])
+    runner.start_customer_run(conversation_id)
     return JsonResponse({"ok": True})
 
 

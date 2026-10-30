@@ -16,6 +16,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
 main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; }
 h2 { font-size: 16px; margin: 0 0 12px; }
@@ -159,3 +160,33 @@ button.small { padding: 4px 10px; font-size: 12px; }
 .chat.operator .msg.user.role-operator { background: var(--ok); color: #fff; border: 0; }
 .attention-item.handoff .recent { margin: 4px 0 0; padding-left: 12px; border-left: 3px solid var(--border); color: var(--muted); font-style: italic; }
 .live-chat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); }
+
+/* Výběr modelu */
+.model-picker { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.model-picker select { max-width: 260px; padding: 4px 6px; font-size: 12px; }
+@media (max-width: 800px) { .model-picker label { display: none; } .model-picker select { max-width: 140px; } }
+
+/* Konzole agenta */
+.agent-form { display: flex; gap: 8px; align-items: stretch; }
+.agent-form textarea { flex: 1; font: inherit; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; resize: vertical; }
+.chips.row { flex-direction: row; flex-wrap: wrap; margin: 8px 0; }
+.chips.row .chip { font-size: 12px; padding: 4px 8px; }
+.run-head { display: flex; gap: 10px; align-items: center; margin: 12px 0 8px; flex-wrap: wrap; }
+.timeline { list-style: none; margin: 0; padding: 0; max-height: 340px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
+.timeline li { padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.timeline li:last-child { border-bottom: 0; }
+.timeline .ev { color: var(--muted); font-size: 12px; }
+.result-card { margin-top: 12px; padding: 12px; border: 1px solid var(--ok); border-radius: 8px; background: var(--surface); }
+.result-card.bad { border-color: var(--bad); background: var(--bad-bg); }
+.result-card.warn { border-color: var(--warn); background: var(--warn-bg); }
+.result-title { display: flex; gap: 8px; align-items: baseline; margin-bottom: 8px; }
+.result-card pre { white-space: pre-wrap; font-size: 12px; background: var(--neutral-bg); padding: 8px; border-radius: 6px; }
+.pill.thinking { animation: thinking 1.2s ease-in-out infinite; }
+@keyframes thinking { 50% { opacity: .45; } }
+
+/* Agent píše… */
+.msg.typing { display: flex; gap: 4px; padding: 12px 14px; }
+.msg.typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: typing 1s infinite ease-in-out; }
+.msg.typing span:nth-child(2) { animation-delay: .15s; }
+.msg.typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes typing { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }

@@ -110,8 +110,11 @@ def apply_decision(conversation_id: str, accepted: bool, note: str | None) -> No
     conversations.save(conv)
     if accepted:
         conversations.add_message(conversation_id, "system", _text(conv, "joined"))
-    # Při zamítnutí zákazníkovi odpoví agent v dalším běhu – ví z conv["handoff"],
-    # že předání neproběhlo (a případnou poznámku administrace).
+    else:
+        # Zákazník dosud čeká bez odpovědi – agent odpoví sám (ví, že předání neproběhlo).
+        from agent import runner  # runner importuje tento modul
+
+        runner.start_customer_run(conversation_id)
 
 
 def operator_message(conversation_id: str, text: str, *, operator: str = "admin") -> dict[str, Any]:

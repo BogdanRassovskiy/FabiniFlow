@@ -128,4 +128,8 @@ def decide(item_id: str, decision: str, *, by: str = "admin", note: str | None =
         from agent import handoff  # handoff importuje tento modul
 
         handoff.apply_decision(item["conversation_id"], accepted=status == APPROVED, note=note)
+    elif item["kind"] == "approval" and item.get("run_id"):
+        from agent import runner  # runner importuje tento modul
+
+        runner.resume_after_approval(item["run_id"], approved=status == APPROVED, note=note)
     return item

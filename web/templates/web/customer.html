@@ -99,6 +99,10 @@
       const state = await res.json();
       document.getElementById("conv-id").textContent = "· " + convId;
       FabiniChat.renderMessages(log, state.messages, {greeting, perspective: "customer"});
+      if (state.typing) {
+        log.insertAdjacentHTML("beforeend", '<div class="msg bot typing"><span></span><span></span><span></span></div>');
+        log.scrollTop = log.scrollHeight;
+      }
       previous = FabiniChat.renderDraft(body, statusPill, state.draft, previous, emptyBody);
       const [tone, text] = MODES[state.mode] || MODES.agent;
       modeBar.className = "chat-mode " + tone; modeBar.textContent = text; modeBar.hidden = !text;

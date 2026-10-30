@@ -75,13 +75,23 @@
 </section>
 {% endif %}
 
-<section class="card agent">
-  <h2>AI agent</h2>
-  <form class="inline" onsubmit="return false">
-    <input placeholder="Zjisti, proč objednávka 100245 nebyla expedována, a pokud je problém v synchronizaci, navrhni další postup." disabled>
-    <button disabled>Spustit</button>
+<section class="card agent" id="agent-console">
+  <h2>AI agent – provozní požadavek</h2>
+  <form id="agent-form" class="agent-form">
+    <textarea id="agent-input" rows="2" placeholder="Např.: Zjisti, proč objednávka 100245 nebyla expedována, a pokud je problém v synchronizaci, navrhni další postup."></textarea>
+    <button id="agent-submit">Spustit agenta</button>
   </form>
-  <p class="muted">Konzole agenta, výběr modelu (OpenRouter) a fronta schvalování – v dalších krocích.</p>
+  <div class="chips row">
+    {% for s in agent_examples %}<button type="button" class="chip" data-text="{{ s }}">{{ s }}</button>{% endfor %}
+  </div>
+  <div id="agent-run" hidden>
+    <div class="run-head">
+      <span class="pill neutral" id="run-status"></span>
+      <small class="muted" id="run-meta"></small>
+    </div>
+    <ol class="timeline" id="run-timeline"></ol>
+    <div id="run-result"></div>
+  </div>
 </section>
 
 <section class="card">
@@ -161,4 +171,82 @@
     {% endfor %}
   </section>
 </div>
+<script>
+(function () {
+  const SHOP = "{{ shop.shop_id }}";
+  const KEY = "fabini-run-" + SHOP;
+  const form = document.getElementById("agent-form"), input = document.getElementById("agent-input");
+  const box = document.getElementById("agent-run"), timeline = document.getElementById("run-timeline");
+  const statusPill = document.getElementById("run-status"), meta = document.getElementById("run-meta");
+  const resultBox = document.getElementById("run-result");
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+  const STATUS = {
+    running: ["warn", "Agent pracuje…"], awaiting_approval: ["bad", "Čeká na schválení"],
+    completed: ["ok", "Dokončeno"], failed: ["bad", "Selhalo"],
+  };
+  const RESULT = {resolved: "Vyřešeno", no_action_needed: "Bez zásahu", escalated: "Eskalováno",
+                  needs_customer_action: "Čeká na zákazníka", failed: "Nevyřešeno"};
+  let runId = null, timer = null, lastCount = 0;
+  try { runId = localStorage.getItem(KEY); } catch (e) {}
+
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+  document.querySelectorAll("#agent-console .chip").forEach((c) => c.addEventListener("click", () => { input.value = c.dataset.text; input.focus(); }));
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    const token = document.querySelector("[name=csrfmiddlewaretoken]").value;
+    const res = await fetch("{% url 'web:agent_run_start' %}", {method: "POST", headers: {"X-CSRFToken": token},
+      body: new URLSearchParams({text, shop: SHOP})});
+    runId = (await res.json()).run_id;
+    try { localStorage.setItem(KEY, runId); } catch (e) {}
+    lastCount = 0; timeline.innerHTML = ""; resultBox.innerHTML = "";
+    watch();
+  });
+
+  function renderResult(run) {
+    if (run.status === "failed") {
+      resultBox.innerHTML = `<div class="result-card bad"><strong>Běh selhal:</strong> ${esc(run.error)}</div>`; return;
+    }
+    if (!run.result) { resultBox.innerHTML = ""; return; }
+    const r = run.result;
+    resultBox.innerHTML = `<div class="result-card">
+      <div class="result-title"><span class="pill ${r.status === "resolved" || r.status === "no_action_needed" ? "ok" : "warn"}">${esc(RESULT[r.status] || r.status)}</span>
+        <strong>${esc(r.summary)}</strong></div>
+      <dl class="facts">
+        <dt>Objednávka</dt><dd class="mono">${esc(r.order_id || "–")}</dd>
+        <dt>Příčina</dt><dd>${esc(r.root_cause)}</dd>
+        <dt>Provedené akce</dt><dd>${(r.actions_taken || []).map(esc).join("<br>") || "žádné"}</dd>
+        <dt>Doporučení</dt><dd>${esc(r.recommendation)}</dd>
+      </dl>
+      <details><summary>Strukturovaný výstup (JSON)</summary><pre>${esc(JSON.stringify(r, null, 2))}</pre></details>
+    </div>`;
+  }
+
+  async function poll() {
+    try {
+      const run = await (await fetch(`/api/agent/runs/${runId}/`, {cache: "no-store"})).json();
+      box.hidden = false;
+      const [tone, label] = STATUS[run.status] || ["neutral", run.status];
+      statusPill.className = "pill " + tone + (run.status === "running" ? " thinking" : "");
+      statusPill.textContent = label;
+      meta.textContent = `${run.run_id} · ${run.model} · ${run.llm_calls} volání modelu · ${run.usage.prompt_tokens + run.usage.completion_tokens} tokenů`;
+      if (run.trace.length !== lastCount) {
+        timeline.innerHTML = run.trace.map((e, i) => `<li class="${i >= lastCount ? "flash-in" : ""}">
+          <span class="actor ${e.actor}">${e.actor}</span> <span class="mono ev">${esc(e.event)}</span> ${esc(e.message)}</li>`).join("");
+        lastCount = run.trace.length;
+        timeline.scrollTop = timeline.scrollHeight;
+      }
+      if (run.status === "awaiting_approval" && !document.getElementById("approval-hint")) {
+        resultBox.innerHTML = `<div class="result-card warn" id="approval-hint">Agent čeká na schválení – viz „Vyžaduje pozornost“ nahoře. <a href="">Obnovit</a></div>`;
+      } else if (run.status !== "awaiting_approval") renderResult(run);
+      if (run.status === "completed" || run.status === "failed") { clearInterval(timer); timer = null; }
+    } catch (e) { /* zkusíme příště */ }
+  }
+
+  function watch() { if (timer) clearInterval(timer); poll(); timer = setInterval(poll, 1000); }
+  if (runId) watch();
+})();
+</script>
 {% endblock %}
