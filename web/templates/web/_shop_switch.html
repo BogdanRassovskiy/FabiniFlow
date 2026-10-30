@@ -1,0 +1,15 @@
+{% load fabini %}
+<div class="shop-switch">
+  {% for s in shops %}
+    <a href="?shop={{ s.shop_id }}" class="{% if s.shop_id == shop.shop_id %}active{% endif %}">
+      <strong>{{ s.name }}
+        {% if tab == "shop_admin" %}
+          {% with n=attention_counts.by_shop|get_item:s.shop_id %}
+            {% if n %}<span class="count-badge" title="Čeká na rozhodnutí">{{ n }}</span>{% endif %}
+          {% endwith %}
+        {% endif %}
+      </strong>
+      <small>{{ s.description }}</small>
+    </a>
+  {% endfor %}
+</div>

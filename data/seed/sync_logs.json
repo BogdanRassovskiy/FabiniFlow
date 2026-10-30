@@ -1,0 +1,12 @@
+[
+  {"id": "s-0001", "order_id": "100241", "ts": "2026-10-27T09:16:00+01:00", "source": "fabini.cz", "target": "WMS FABINI", "status": "success", "attempt": 1, "message": "Objednávka předána do WMS (WMS-CZ-55811)"},
+  {"id": "s-0002", "order_id": "100242", "ts": "2026-10-27T15:42:00+01:00", "source": "fabini.sk", "target": "WMS FABINI", "status": "success", "attempt": 1, "message": "Objednávka předána do WMS (WMS-CZ-55834)"},
+  {"id": "s-0003", "order_id": "100243", "ts": "2026-10-28T11:04:00+01:00", "source": "fabini.cz", "target": "WMS FABINI", "status": "success", "attempt": 1, "message": "Objednávka předána do WMS (WMS-CZ-55870)"},
+  {"id": "s-0004", "order_id": "100244", "ts": "2026-10-28T18:26:00+01:00", "source": "fabini.sk", "target": "WMS FABINI", "status": "success", "attempt": 1, "message": "Objednávka předána do WMS (WMS-CZ-55888)"},
+  {"id": "s-0005", "order_id": "100245", "ts": "2026-10-29T08:49:00+01:00", "source": "fabini.cz", "target": "WMS FABINI", "status": "error", "attempt": 1, "error_code": "TIMEOUT", "message": "WMS neodpověděl do 30 s"},
+  {"id": "s-0006", "order_id": "100245", "ts": "2026-10-29T08:54:00+01:00", "source": "fabini.cz", "target": "WMS FABINI", "status": "error", "attempt": 2, "error_code": "TIMEOUT", "message": "WMS neodpověděl do 30 s"},
+  {"id": "s-0007", "order_id": "100245", "ts": "2026-10-29T09:04:00+01:00", "source": "fabini.cz", "target": "WMS FABINI", "status": "error", "attempt": 3, "error_code": "TIMEOUT", "message": "WMS neodpověděl do 30 s – automatické opakování vyčerpáno"},
+  {"id": "s-0008", "order_id": "100247", "ts": "2026-10-29T13:32:00+01:00", "source": "fabini.sk", "target": "WMS FABINI", "status": "error", "attempt": 1, "error_code": "VALIDATION", "message": "SKU TRI-NUZ-SET3 nemá ve WMS mapování pro obchod fabini.sk"},
+  {"id": "s-0009", "order_id": "100247", "ts": "2026-10-29T13:37:00+01:00", "source": "fabini.sk", "target": "WMS FABINI", "status": "error", "attempt": 2, "error_code": "VALIDATION", "message": "SKU TRI-NUZ-SET3 nemá ve WMS mapování pro obchod fabini.sk"},
+  {"id": "s-0010", "order_id": "100248", "ts": "2026-10-29T16:14:00+01:00", "source": "fabini.cz", "target": "WMS FABINI", "status": "success", "attempt": 1, "message": "Objednávka předána do WMS (WMS-CZ-55902)"}
+]

@@ -1,0 +1,14 @@
+[
+  {"sku": "LUC-PAN-26", "shop_id": "fabini_cz", "collection": "Lucca", "name": "Nerezová pánev Lucca 26 cm", "price": 1990},
+  {"sku": "LUC-HRN-SET4", "shop_id": "fabini_cz", "collection": "Lucca", "name": "Sada nerezových hrnců Lucca (4 ks)", "price": 6990},
+  {"sku": "MED-PAN-28", "shop_id": "fabini_cz", "collection": "Meda", "name": "Keramická pánev Meda 28 cm", "price": 1490},
+  {"sku": "MAT-HRN-24", "shop_id": "fabini_cz", "collection": "Mattia", "name": "Litinový hrnec Mattia 24 cm", "price": 3490},
+  {"sku": "TRI-NUZ-SET3", "shop_id": "fabini_cz", "collection": "Trino", "name": "Sada nožů Trino (3 ks)", "price": 2990},
+  {"sku": "TER-MIS-OV", "shop_id": "fabini_cz", "collection": "Terra", "name": "Oválná zapékací mísa Terra", "price": 890},
+  {"sku": "LUC-PAN-26", "shop_id": "fabini_sk", "collection": "Lucca", "name": "Nerezová panvica Lucca 26 cm", "price": 79},
+  {"sku": "LUC-HRN-SET4", "shop_id": "fabini_sk", "collection": "Lucca", "name": "Sada nerezových hrncov Lucca (4 ks)", "price": 279},
+  {"sku": "MED-PAN-28", "shop_id": "fabini_sk", "collection": "Meda", "name": "Keramická panvica Meda 28 cm", "price": 59},
+  {"sku": "MAT-HRN-24", "shop_id": "fabini_sk", "collection": "Mattia", "name": "Liatinový hrniec Mattia 24 cm", "price": 139},
+  {"sku": "TRI-NUZ-SET3", "shop_id": "fabini_sk", "collection": "Trino", "name": "Sada nožov Trino (3 ks)", "price": 119},
+  {"sku": "TER-MIS-OV", "shop_id": "fabini_sk", "collection": "Terra", "name": "Oválna zapekacia misa Terra", "price": 35}
+]

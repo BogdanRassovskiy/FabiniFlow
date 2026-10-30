@@ -1,0 +1,55 @@
+{% extends "web/base.html" %}
+{% block title %}Simulace{% endblock %}
+{% block content %}
+{% include "web/_admin_subnav.html" %}
+<p class="lead">Externí systémy jsou simulované. Tady je můžete „rozbít“ a sledovat, jak si s poruchou poradí agent.
+  Každá změna se zapíše do trace logu jako akce člověka.</p>
+
+<form method="post" class="card">
+  {% csrf_token %}
+  <table class="sim">
+    <thead>
+      <tr><th>Systém</th><th>Endpoint</th><th>Režim</th><th>Zpoždění (ms)</th><th>Jen objednávky</th></tr>
+    </thead>
+    <tbody>
+      {% for c in configs %}
+        <tr class="{% if c.mode != 'ok' %}faulty{% endif %}">
+          <td><strong>{{ c.label }}</strong></td>
+          <td class="mono muted">/mock/{{ c.system }}/…</td>
+          <td>
+            <select name="{{ c.system }}-mode">
+              {% for value, text in modes.items %}
+                <option value="{{ value }}" {% if value == c.mode %}selected{% endif %}>{{ text }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td><input type="number" name="{{ c.system }}-latency_ms" value="{{ c.latency_ms }}" min="0" max="10000" step="50" class="narrow"></td>
+          <td><input name="{{ c.system }}-order_ids" value="{{ c.order_ids|join:', ' }}" placeholder="všechny, nebo např. 100245, 100247"></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="form-actions"><button>Uložit nastavení</button></div>
+</form>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>Režimy</h2>
+    <dl class="facts">
+      <dt>Timeout</dt><dd>Systém neodpoví dřív, než agent přestane čekat.</dd>
+      <dt>HTTP 500 / 503</dt><dd>Systém vrátí chybu; 503 je přechodná, 500 neočekávaná.</dd>
+      <dt>Nestabilní</dt><dd>Lichá volání selžou, sudá projdou – ověří opakování s backoffem.</dd>
+      <dt>Jen objednávky</dt><dd>Porucha se projeví jen u uvedených čísel, ostatní fungují.</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <h2>Výchozí data</h2>
+    <p class="muted">Vrátí objednávky, platby, sklady, logy, incidenty i trace log do původního stavu.</p>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reset_data">
+      <button class="danger" onclick="return confirm('Opravdu obnovit všechna data?')">Obnovit výchozí data</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

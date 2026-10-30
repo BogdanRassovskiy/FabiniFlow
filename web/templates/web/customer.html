@@ -1,0 +1,45 @@
+{% extends "web/base.html" %}
+{% block title %}Zákazník{% endblock %}
+{% block content %}
+<p class="lead">Zákazník píše obchodu běžnou řečí. Agent z konverzace vytvoří dotaz, reklamaci nebo incident a začne ho řešit.</p>
+{% include "web/_shop_switch.html" %}
+
+<div class="chat-layout">
+  <section class="card chat">
+    <header class="chat-head">
+      <strong>Podpora {{ shop.name }}</strong>
+      <small class="muted">obvykle odpovídáme během pár vteřin</small>
+    </header>
+    <div class="chat-log" id="chat-log">
+      {% if shop.language == "sk" %}
+        <div class="msg bot">Dobrý deň, som asistent obchodu {{ shop.name }}. S čím vám môžem pomôcť?</div>
+      {% else %}
+        <div class="msg bot">Dobrý den, jsem asistent obchodu {{ shop.name }}. S čím vám mohu pomoci?</div>
+      {% endif %}
+    </div>
+    <form class="chat-input" onsubmit="return false">
+      <button type="button" class="ghost" title="Přiložit snímek obrazovky" disabled>📎</button>
+      <input id="chat-text" placeholder="Napište zprávu…" disabled>
+      <button disabled>Odeslat</button>
+    </form>
+  </section>
+
+  <aside class="card">
+    <h2>Ukázkové zprávy</h2>
+    <p class="muted">Kliknutím vložíte do chatu.</p>
+    <div class="chips">
+      {% for s in sample_messages %}
+        <button type="button" class="chip" data-text="{{ s }}" disabled>{{ s }}</button>
+      {% endfor %}
+    </div>
+
+    <h2 class="mt">Snímky k přiložení</h2>
+    <p class="muted">Simulace – zákazník vybírá z připravených snímků obrazovky.</p>
+    <div class="shots">
+      {% for s in sample_screenshots %}
+        <figure class="shot"><div class="shot-placeholder">obrázek bude doplněn</div><figcaption>{{ s }}</figcaption></figure>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

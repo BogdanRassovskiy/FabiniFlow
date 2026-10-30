@@ -1,0 +1,44 @@
+{% extends "web/base.html" %}
+{% load fabini %}
+{% block title %}Trace log{% endblock %}
+{% block content %}
+<p class="lead">Co se právě stalo a kdo o tom rozhodl.</p>
+<div class="legend">
+  <span class="actor LLM">LLM</span> rozhodnutí jazykového modelu
+  <span class="actor SCRIPT">SCRIPT</span> deterministické pravidlo v kódu
+  <span class="actor HUMAN">HUMAN</span> akce člověka
+  <span class="actor SYSTEM">SYSTEM</span> událost / odpověď systému
+</div>
+
+<form method="get" class="inline filters">
+  <select name="actor">
+    <option value="">Všichni aktéři</option>
+    {% for a in actors %}<option value="{{ a }}" {% if a == actor %}selected{% endif %}>{{ a }}</option>{% endfor %}
+  </select>
+  <input name="order" value="{{ request.GET.order }}" placeholder="Objednávka">
+  <input name="run" value="{{ request.GET.run }}" placeholder="ID běhu">
+  <button>Filtrovat</button>
+</form>
+
+<section class="card">
+  {% if entries %}
+    <table class="trace">
+      <thead><tr><th>Čas</th><th>Aktér</th><th>Událost</th><th>Popis</th><th>Objednávka</th><th>Běh</th></tr></thead>
+      <tbody>
+        {% for e in entries %}
+          <tr>
+            <td class="mono">{{ e.ts|dt }}</td>
+            <td><span class="actor {{ e.actor }}">{{ e.actor }}</span></td>
+            <td class="mono">{{ e.event }}</td>
+            <td>{{ e.message }}</td>
+            <td class="mono">{{ e.order_id|default:"–" }}</td>
+            <td class="mono">{{ e.run_id|default:"–" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Zatím žádné záznamy. Objeví se po prvním běhu agenta nebo akci v obchodě.</p>
+  {% endif %}
+</section>
+{% endblock %}

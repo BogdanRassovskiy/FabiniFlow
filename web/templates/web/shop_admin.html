@@ -1,0 +1,114 @@
+{% extends "web/base.html" %}
+{% load fabini %}
+{% block title %}Administrace{% endblock %}
+{% block content %}
+{% include "web/_admin_subnav.html" %}
+<p class="lead">Provozní pohled na e-shopy FABINI – objednávky, centrální sklad, incidenty a AI agent.</p>
+{% include "web/_shop_switch.html" %}
+
+{% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
+<div class="flash warn" id="attention-stale" hidden>
+  Přibyly nové požadavky. <a href="">Obnovit stránku</a>
+</div>
+
+<section class="card attention {% if attention %}has-items{% endif %}" id="attention">
+  <h2>Vyžaduje pozornost
+    {% if attention %}<span class="count-badge">{{ attention|length }}</span>{% endif %}
+  </h2>
+  {% for a in attention %}
+    <article class="attention-item {{ a.kind }}">
+      <div class="attention-main">
+        <div class="attention-title">
+          {% if a.kind == "approval" %}<span class="pill bad">Schválení</span>{% else %}<span class="pill warn">Upozornění</span>{% endif %}
+          <strong>{{ a.title }}</strong>
+        </div>
+        {% if a.kind == "approval" %}
+          <div class="mono">{{ a.tool }}({{ a.args|pretty_args }})</div>
+        {% endif %}
+        <p class="reason"><span class="actor LLM">LLM</span> {{ a.reason }}</p>
+        <small class="muted">
+          {{ a.created_at|dt }}
+          {% if a.order_id %} · objednávka <span class="mono">{{ a.order_id }}</span>{% endif %}
+          {% if a.run_id %} · <a href="{% url 'web:trace' %}?run={{ a.run_id }}">trace běhu</a>{% endif %}
+        </small>
+      </div>
+      <form method="post" action="{% url 'web:decide_approval' a.id %}" class="attention-actions">
+        {% csrf_token %}
+        <input type="hidden" name="shop" value="{{ shop.shop_id }}">
+        {% if a.kind == "approval" %}
+          <input name="note" placeholder="Poznámka (nepovinné)">
+          <button name="decision" value="approve">Schválit</button>
+          <button name="decision" value="deny" class="danger">Zamítnout</button>
+        {% else %}
+          <button name="decision" value="ack" class="ghost">Beru na vědomí</button>
+        {% endif %}
+      </form>
+    </article>
+  {% empty %}
+    <p class="muted">Nic nečeká na rozhodnutí. Jakmile agent narazí na rizikovou akci, objeví se tady.</p>
+  {% endfor %}
+</section>
+
+<section class="card agent">
+  <h2>AI agent</h2>
+  <form class="inline" onsubmit="return false">
+    <input placeholder="Zjisti, proč objednávka 100245 nebyla expedována, a pokud je problém v synchronizaci, navrhni další postup." disabled>
+    <button disabled>Spustit</button>
+  </form>
+  <p class="muted">Konzole agenta, výběr modelu (OpenRouter) a fronta schvalování – v dalších krocích.</p>
+</section>
+
+<section class="card">
+  <h2>Objednávky</h2>
+  <table>
+    <thead>
+      <tr><th>Číslo</th><th>Vytvořeno</th><th>Zákazník</th><th class="num">Celkem</th>
+          <th>Stav</th><th>Platba</th><th>Expedice</th><th>Poslední synchronizace</th></tr>
+    </thead>
+    <tbody>
+      {% for o in orders %}
+        <tr>
+          <td class="mono">{{ o.order_id }}</td>
+          <td>{{ o.created_at|dt }}</td>
+          <td>{{ o.customer.name }}<br><small class="muted">{{ o.customer.city }}</small></td>
+          <td class="num">{{ o.total|money:o.currency }}</td>
+          <td><span class="pill {{ o.status|tone }}">{{ o.status|label }}</span></td>
+          <td><span class="pill {{ o.payment.status|tone }}">{{ o.payment.status|label }}</span>
+              <small class="muted">{{ o.payment.method|label }}</small></td>
+          <td><span class="pill {{ o.fulfillment.status|tone }}">{{ o.fulfillment.status|label }}</span></td>
+          <td>
+            {% if o.last_sync %}
+              <span class="pill {{ o.last_sync.status|tone }}">{{ o.last_sync.status|label }}</span>
+              <small class="muted">{{ o.last_sync.message }}</small>
+            {% else %}–{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>{{ warehouse.name }}</h2>
+    <p class="muted">Systém: {{ warehouse.system }}</p>
+    <table>
+      <thead><tr><th>SKU</th><th>Produkt</th><th class="num">Skladem</th></tr></thead>
+      <tbody>
+        {% for s in stock %}
+          <tr><td class="mono">{{ s.sku }}</td><td>{{ s.name }}</td>
+              <td class="num {% if s.qty == 0 %}bad-text{% endif %}">{{ s.qty }} ks</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  <section class="card">
+    <h2>Incidenty</h2>
+    {% for t in tickets %}
+      <div class="ticket"><span class="mono">{{ t.ticket_id }}</span> {{ t.description }}</div>
+    {% empty %}
+      <p class="muted">Žádné otevřené incidenty.</p>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

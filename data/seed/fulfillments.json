@@ -1,0 +1,10 @@
+[
+  {"order_id": "100241", "warehouse_id": "WH-CZ", "status": "shipped", "wms_order_id": "WMS-CZ-55811", "carrier": "Zásilkovna", "tracking": "Z4471120931", "updated_at": "2026-10-28T10:20:00+01:00"},
+  {"order_id": "100242", "warehouse_id": "WH-CZ", "status": "shipped", "wms_order_id": "WMS-CZ-55834", "carrier": "Packeta SK", "tracking": "Z4471122077", "updated_at": "2026-10-28T09:05:00+01:00"},
+  {"order_id": "100243", "warehouse_id": "WH-CZ", "status": "picking", "wms_order_id": "WMS-CZ-55870", "carrier": "PPL", "tracking": null, "updated_at": "2026-10-29T07:30:00+01:00"},
+  {"order_id": "100244", "warehouse_id": "WH-CZ", "status": "packed", "wms_order_id": "WMS-CZ-55888", "carrier": "Packeta SK", "tracking": null, "updated_at": "2026-10-29T14:10:00+01:00"},
+  {"order_id": "100245", "warehouse_id": "WH-CZ", "status": "not_received", "wms_order_id": null, "carrier": null, "tracking": null, "updated_at": null},
+  {"order_id": "100246", "warehouse_id": "WH-CZ", "status": "on_hold", "wms_order_id": null, "carrier": null, "tracking": null, "updated_at": null, "hold_reason": "awaiting_payment"},
+  {"order_id": "100247", "warehouse_id": "WH-CZ", "status": "not_received", "wms_order_id": null, "carrier": null, "tracking": null, "updated_at": null},
+  {"order_id": "100248", "warehouse_id": "WH-CZ", "status": "backorder", "wms_order_id": "WMS-CZ-55902", "carrier": null, "tracking": null, "updated_at": "2026-10-29T16:20:00+01:00", "hold_reason": "out_of_stock", "missing_skus": ["MAT-HRN-24"], "expected_restock": "2026-11-12"}
+]

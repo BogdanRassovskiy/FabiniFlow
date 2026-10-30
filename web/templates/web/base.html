@@ -1,0 +1,46 @@
+{% load static %}<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}FabiniFlow{% endblock %} · AI Operations Agent</title>
+  <link rel="stylesheet" href="{% static 'web/app.css' %}?v={{ asset_version }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Fabini<span>Flow</span></div>
+    <nav class="tabs">
+      <a href="{% url 'web:customer' %}" class="{% if tab == 'customer' %}active{% endif %}">Zákazník</a>
+      <a href="{% url 'web:shop_admin' %}" class="{% if tab == 'shop_admin' %}active{% endif %}">Administrace obchodů
+        <span class="count-badge" id="attention-badge" title="Čeká na schválení / pozornost"
+              {% if not attention_counts.total %}hidden{% endif %}>{{ attention_counts.total }}</span></a>
+      <a href="{% url 'web:trace' %}" class="{% if tab == 'trace' %}active{% endif %}">Trace log</a>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <script>
+    // Živý odznak: každé 3 s zjistí počet položek čekajících na člověka.
+    (function () {
+      const badge = document.getElementById("attention-badge");
+      const stale = document.getElementById("attention-stale");
+      let last = {{ attention_counts.total }};
+      async function poll() {
+        try {
+          const res = await fetch("{% url 'web:attention_api' %}", {cache: "no-store"});
+          const {total} = await res.json();
+          badge.textContent = total;
+          badge.hidden = total === 0;
+          if (total > last) {
+            badge.classList.remove("pulse"); void badge.offsetWidth; badge.classList.add("pulse");
+          }
+          if (stale && total !== last) stale.hidden = false;
+          last = total;
+        } catch (e) { /* server dočasně nedostupný – zkusíme příště */ }
+      }
+      setInterval(poll, 3000);
+    })();
+  </script>
+</body>
+</html>

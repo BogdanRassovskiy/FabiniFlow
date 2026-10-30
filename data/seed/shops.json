@@ -1,0 +1,4 @@
+[
+  {"shop_id": "fabini_cz", "name": "FABINI.cz", "domain": "fabini.cz", "description": "Česká republika · CZK", "country": "CZ", "language": "cs", "currency": "CZK", "warehouse_id": "WH-CZ"},
+  {"shop_id": "fabini_sk", "name": "FABINI.sk", "domain": "fabini.sk", "description": "Slovensko · EUR", "country": "SK", "language": "sk", "currency": "EUR", "warehouse_id": "WH-CZ"}
+]

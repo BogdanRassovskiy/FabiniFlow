@@ -1,0 +1,4 @@
+[
+  {"order_id": "100245", "retry_sync": "success", "note": "Výpadek WMS byl dočasný – opakovaná synchronizace projde"},
+  {"order_id": "100247", "retry_sync": "error", "error_code": "VALIDATION", "error": "SKU TRI-NUZ-SET3 nemá ve WMS mapování pro obchod fabini.sk", "note": "Trvalá chyba kmenových dat – opakování nepomůže, je potřeba incident"}
+]

@@ -1,0 +1,7 @@
+[
+  {"system": "eshop", "mode": "ok", "latency_ms": 150, "order_ids": [], "calls": 0},
+  {"system": "payments", "mode": "ok", "latency_ms": 200, "order_ids": [], "calls": 0},
+  {"system": "wms", "mode": "ok", "latency_ms": 300, "order_ids": [], "calls": 0},
+  {"system": "integration", "mode": "ok", "latency_ms": 400, "order_ids": [], "calls": 0},
+  {"system": "helpdesk", "mode": "ok", "latency_ms": 250, "order_ids": [], "calls": 0}
+]

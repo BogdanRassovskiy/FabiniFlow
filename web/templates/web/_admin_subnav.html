@@ -1,0 +1,4 @@
+<nav class="subnav">
+  <a href="{% url 'web:shop_admin' %}" class="{% if subtab == 'shop' %}active{% endif %}">Obchody</a>
+  <a href="{% url 'web:simulation' %}" class="{% if subtab == 'simulation' %}active{% endif %}">Simulace externích systémů</a>
+</nav>

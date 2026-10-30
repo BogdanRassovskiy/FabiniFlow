@@ -1,0 +1,15 @@
+from django.urls import path
+
+from web import views
+
+app_name = "web"
+
+urlpatterns = [
+    path("", views.index, name="index"),
+    path("zakaznik/", views.customer, name="customer"),
+    path("administrace/", views.shop_admin, name="shop_admin"),
+    path("administrace/simulace/", views.simulation, name="simulation"),
+    path("administrace/pozadavky/<str:item_id>/", views.decide_approval, name="decide_approval"),
+    path("api/attention/", views.attention_api, name="attention_api"),
+    path("trace/", views.trace_log, name="trace"),
+]

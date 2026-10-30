@@ -1,0 +1,4 @@
+[
+  {"warehouse_id": "WH-CZ", "name": "Centrální sklad FABINI", "system": "WMS FABINI", "serves": ["fabini_cz", "fabini_sk"],
+   "stock": {"LUC-PAN-26": 412, "LUC-HRN-SET4": 58, "MED-PAN-28": 230, "MAT-HRN-24": 0, "TRI-NUZ-SET3": 96, "TER-MIS-OV": 141}}
+]

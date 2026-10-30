@@ -1,0 +1,10 @@
+[
+  {"order_id": "100241", "method": "card", "status": "paid", "amount": 1990, "currency": "CZK", "paid_at": "2026-10-27T09:15:10+01:00", "provider_ref": "PAY-88120041"},
+  {"order_id": "100242", "method": "card", "status": "paid", "amount": 59, "currency": "EUR", "paid_at": "2026-10-27T15:41:00+01:00", "provider_ref": "PAY-88120102"},
+  {"order_id": "100243", "method": "card", "status": "paid", "amount": 1780, "currency": "CZK", "paid_at": "2026-10-28T11:03:22+01:00", "provider_ref": "PAY-88120533"},
+  {"order_id": "100244", "method": "cod", "status": "pending", "amount": 79, "currency": "EUR", "paid_at": null, "provider_ref": null, "note": "Dobírka – platba při převzetí"},
+  {"order_id": "100245", "method": "card", "status": "paid", "amount": 8480, "currency": "CZK", "paid_at": "2026-10-29T08:48:05+01:00", "provider_ref": "PAY-88121107"},
+  {"order_id": "100246", "method": "bank_transfer", "status": "pending", "amount": 2980, "currency": "CZK", "paid_at": null, "provider_ref": "VS100246", "note": "Čeká se na připsání platby"},
+  {"order_id": "100247", "method": "card", "status": "paid", "amount": 198, "currency": "EUR", "paid_at": "2026-10-29T13:31:40+01:00", "provider_ref": "PAY-88121390"},
+  {"order_id": "100248", "method": "card", "status": "paid", "amount": 3490, "currency": "CZK", "paid_at": "2026-10-29T16:13:02+01:00", "provider_ref": "PAY-88121702"}
+]

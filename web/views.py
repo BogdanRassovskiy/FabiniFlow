@@ -1,0 +1,142 @@
+from django.http import Http404, JsonResponse
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.views.decorators.http import require_GET, require_POST
+
+from agent import approvals
+from core import storage, trace
+from shops import repository
+from simulator import faults
+
+
+def index(request):
+    return redirect("web:shop_admin")
+
+
+# Ukázkové zprávy pro demo – pokrývají hlavní scénáře v seed datech.
+SAMPLE_MESSAGES = {
+    "fabini_cz": [
+        "Dobrý den, objednávku 100245 jsem zaplatil kartou, ale pořád nebyla odeslána. Co se děje?",
+        "Proč ještě nebyla odeslána moje objednávka 100246? Pánve potřebuju do pátku.",
+        "Objednávka 100248 – kdy dorazí ten litinový hrnec Mattia?",
+    ],
+    "fabini_sk": [
+        "Dobrý deň, objednávku 100247 som zaplatil už predvčerom a stále nič. Môžete to preveriť?",
+        "Kde je moja objednávka 100244?",
+    ],
+}
+
+# TODO: vygenerovat skutečné obrázky (viz Trello) – zatím jen popisky.
+SAMPLE_SCREENSHOTS = [
+    "Potvrzení platby z bankovnictví",
+    "Sledování zásilky – „nedoručeno“",
+    "E-mail „Objednávka přijata“ bez dalších zpráv",
+]
+
+
+def customer(request):
+    shops = repository.shops()
+    shop_id = request.GET.get("shop") or shops[0]["shop_id"]
+    return render(request, "web/customer.html", {
+        "tab": "customer",
+        "shops": shops,
+        "shop": _shop_or_404(shop_id),
+        "sample_messages": SAMPLE_MESSAGES.get(shop_id, []),
+        "sample_screenshots": SAMPLE_SCREENSHOTS,
+    })
+
+
+def shop_admin(request):
+    shops = repository.shops()
+    shop_id = request.GET.get("shop") or shops[0]["shop_id"]
+    shop = _shop_or_404(shop_id)
+    warehouse = repository.warehouse(shop["warehouse_id"])
+    products = {p["sku"]: p for p in repository.products(shop_id)}
+    stock = [
+        {"sku": sku, "name": products.get(sku, {}).get("name", sku), "qty": qty}
+        for sku, qty in warehouse["stock"].items()
+    ]
+    return render(request, "web/shop_admin.html", {
+        "tab": "shop_admin",
+        "subtab": "shop",
+        "shops": shops,
+        "shop": shop,
+        "orders": repository.order_board(shop_id),
+        "warehouse": warehouse,
+        "stock": stock,
+        "tickets": storage.list_all("tickets", lambda t: t.get("shop_id") == shop_id),
+        "attention": approvals.pending(shop_id),
+        "error": request.GET.get("error"),
+    })
+
+
+@require_POST
+def decide_approval(request, item_id):
+    shop_id = request.POST.get("shop", "")
+    url = f"{reverse('web:shop_admin')}?shop={shop_id}"
+    try:
+        approvals.decide(item_id, request.POST.get("decision", ""),
+                         note=request.POST.get("note", "").strip() or None)
+    except (ValueError, storage.NotFound) as exc:
+        return redirect(f"{url}&error={exc}")
+    return redirect(url)
+
+
+@require_GET
+def attention_api(request):
+    """Počty čekajících položek – UI je periodicky načítá kvůli odznaku na záložce."""
+    return JsonResponse(approvals.pending_counts())
+
+
+def simulation(request):
+    if request.method == "POST":
+        if request.POST.get("action") == "reset_data":
+            storage.reset_from_seed()
+            trace.record(trace.Actor.HUMAN, "data_reset", "Administrátor obnovil výchozí data všech systémů")
+            return redirect("web:simulation")
+
+        for config in faults.all_configs():
+            system = config["system"]
+            new = {
+                "mode": request.POST.get(f"{system}-mode", "ok"),
+                "latency_ms": int(request.POST.get(f"{system}-latency_ms") or 0),
+                "order_ids": [o.strip() for o in request.POST.get(f"{system}-order_ids", "").split(",") if o.strip()],
+            }
+            if any(config[k] != v for k, v in new.items()):
+                faults.update_config(system, **new)
+                scope = ", ".join(new["order_ids"]) or "všechny objednávky"
+                trace.record(trace.Actor.HUMAN, "simulation_changed",
+                             f"{faults.SYSTEMS[system]}: {faults.MODES[new['mode']]}, "
+                             f"zpoždění {new['latency_ms']} ms, rozsah: {scope}",
+                             data={"system": system, **new})
+        return redirect("web:simulation")
+
+    return render(request, "web/simulation.html", {
+        "tab": "shop_admin",
+        "subtab": "simulation",
+        "configs": [{**c, "label": faults.SYSTEMS[c["system"]]} for c in faults.all_configs()],
+        "modes": faults.MODES,
+    })
+
+
+def trace_log(request):
+    actor = request.GET.get("actor") or None
+    entries = trace.entries(
+        run_id=request.GET.get("run") or None,
+        order_id=request.GET.get("order") or None,
+    )
+    if actor:
+        entries = [e for e in entries if e["actor"] == actor]
+    return render(request, "web/trace.html", {
+        "tab": "trace",
+        "entries": entries,
+        "actors": [a.value for a in trace.Actor],
+        "actor": actor,
+    })
+
+
+def _shop_or_404(shop_id):
+    try:
+        return repository.shop(shop_id)
+    except storage.NotFound:
+        raise Http404("Obchod neexistuje")
