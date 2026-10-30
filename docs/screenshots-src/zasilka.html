@@ -1,0 +1,52 @@
+<!doctype html><html lang="cs"><head><meta charset="utf-8"><link rel="stylesheet" href="_phone.css">
+<style>
+body { background: #fff; color: #1f2937; position: relative; }
+.bar { background: #b91c1c; color: #fff; }
+.bar .status { color: #fff; }
+.head { padding: 4px 20px 18px; }
+.head small { opacity: .85; font-size: 13px; }
+.head h1 { font-size: 22px; font-weight: 700; margin-top: 2px; }
+.head .num { font-family: ui-monospace, Menlo, monospace; font-size: 15px; margin-top: 6px; letter-spacing: .5px; }
+.alert { margin: 16px; padding: 14px 16px; border-radius: 12px; background: #fef2f2; border: 1px solid #fecaca; }
+.alert b { color: #b91c1c; font-size: 17px; display: block; }
+.alert p { font-size: 14px; color: #7f1d1d; margin-top: 4px; line-height: 1.4; }
+.meta { margin: 0 16px; font-size: 14px; color: #4b5563; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+.meta span:nth-child(odd) { color: #9ca3af; }
+h2 { font-size: 15px; margin: 22px 16px 10px; }
+.tl { margin: 0 16px; border-left: 2px solid #e5e7eb; padding-left: 18px; }
+.ev { position: relative; padding-bottom: 16px; }
+.ev::before { content: ""; position: absolute; left: -25px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: #d1d5db; border: 2px solid #fff; }
+.ev.bad::before { background: #dc2626; }
+.ev.ok::before { background: #16a34a; }
+.ev b { font-size: 14px; display: block; }
+.ev span { font-size: 12.5px; color: #6b7280; }
+.cta { position: absolute; left: 16px; right: 16px; bottom: 34px; background: #b91c1c; color: #fff; text-align: center; padding: 15px; border-radius: 12px; font-weight: 600; }
+</style></head><body>
+<div class="bar">
+  <div class="status"><span>18:12</span><span class="icons">▂▄▆█ &nbsp;LTE <span class="batt"></span></span></div>
+  <div class="head">
+    <small>Sledování zásilky</small>
+    <h1>Zásilka nedoručena</h1>
+    <div class="num">Z4471120931</div>
+  </div>
+</div>
+<div class="alert">
+  <b>Doručení se nezdařilo</b>
+  <p>Adresát nebyl zastižen. Zásilka byla vrácena na depo a čeká na další pokyny odesílatele.</p>
+</div>
+<div class="meta">
+  <span>Odesílatel</span><span>FABINI.cz</span>
+  <span>Příjemce</span><span>Jana Nováková, Praha 13000</span>
+  <span>Číslo obj.</span><span>100241</span>
+</div>
+<h2>Historie zásilky</h2>
+<div class="tl">
+  <div class="ev bad"><b>Vráceno na depo Praha-Hostivař</b><span>30. 10. 2026, 17:40</span></div>
+  <div class="ev bad"><b>Nedoručeno – adresát nezastižen</b><span>30. 10. 2026, 14:05</span></div>
+  <div class="ev"><b>Na cestě k adresátovi</b><span>30. 10. 2026, 8:15</span></div>
+  <div class="ev"><b>Zásilka převzata od odesílatele</b><span>28. 10. 2026, 10:20</span></div>
+  <div class="ev ok"><b>Odesílatel zadal data zásilky</b><span>28. 10. 2026, 9:52</span></div>
+</div>
+<div class="cta">Domluvit nové doručení</div>
+<div class="home"></div>
+</body></html>

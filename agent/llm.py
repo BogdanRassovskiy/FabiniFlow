@@ -76,6 +76,12 @@ def set_model(model_id: str) -> None:
         records.append({"key": "model", "value": model_id})
 
 
+def supports_vision(model_id: str) -> bool:
+    """Neznámý model (např. výpadek seznamu) bereme jako schopný – chybu pak vrátí poskytovatel."""
+    model = next((m for m in available_models() if m["id"] == model_id), None)
+    return model is None or model.get("vision", False)
+
+
 def available_models() -> list[dict[str, Any]]:
     """Modely s podporou nástrojů (cache 1 h). Při výpadku vrátí aspoň doporučené."""
     if time.time() - _models_cache["at"] < 3600 and _models_cache["models"]:

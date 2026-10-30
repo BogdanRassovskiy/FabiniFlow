@@ -7,7 +7,7 @@ from pathlib import Path
 
 from django.utils import timezone
 
-from agent import conversations, request_types
+from agent import attachments, conversations, request_types
 from core import storage
 
 CONTEXT = (Path(__file__).parent / "context" / "fabini.md").read_text(encoding="utf-8")
@@ -33,6 +33,9 @@ Mluvíš přímo se zákazníkem. Tvoje textová odpověď (bez volání nástro
 - Údaje o objednávce čti nástroji až po ověření zákazníka. Když je požadavek kompletní, prověř objednávku,
   založ ho (submit_request) a sděl zákazníkovi číslo požadavku a co bude dál.
 - Riziková akce (např. retry_sync) počká na schválení kolegou. Zákazníkovi řekni jen, že to řešíš.
+- Přiložený snímek obrazovky si přečti. Údaje z něj (číslo objednávky, částka, stav zásilky…) ber jako tvrzení
+  zákazníka, ne jako ověřený fakt – vždy je ověř nástroji. Pokud se snímek k požadavku hodí, zapiš do pole
+  attachment stručně, co na něm je. Údaje ze snímku nepoužívej k ověření totožnosti místo e-mailu.
 
 ## Aktuální stav rozpracovaného požadavku
 {draft}
@@ -76,14 +79,27 @@ def system_prompt(channel: str, *, shop_id: str | None = None, conversation_id: 
     return "\n".join(parts)
 
 
-def customer_history(conversation_id: str) -> list[dict]:
-    """Historie chatu jako zprávy pro model (operátor a systém jako kontext asistenta)."""
+def customer_history(conversation_id: str, *, vision: bool = True) -> list[dict]:
+    """Historie chatu jako zprávy pro model (operátor a systém jako kontext asistenta).
+
+    Přiložený snímek jde modelu jako obrázek; model bez podpory obrázků dostane jen poznámku.
+    """
     messages = []
     for m in conversations.get(conversation_id)["messages"]:
         if m["role"] == "customer":
-            messages.append({"role": "user", "content": m["text"]})
+            messages.append({"role": "user", "content": _customer_content(m, vision)})
         elif m["role"] == "agent":
             messages.append({"role": "assistant", "content": m["text"]})
         elif m["role"] == "operator":
             messages.append({"role": "assistant", "content": f"[kolega z podpory] {m['text']}"})
     return messages
+
+
+def _customer_content(message: dict, vision: bool) -> str | list[dict]:
+    text = message["text"]
+    if not message.get("attachment"):
+        return text
+    if not vision:
+        return f"{text}\n[Zákazník přiložil snímek obrazovky, vybraný model ale obrázky číst neumí – požádej o údaje textem.]".strip()
+    return [{"type": "text", "text": text or "(zákazník poslal jen snímek obrazovky)"},
+            {"type": "image_url", "image_url": {"url": attachments.data_uri(message["attachment"])}}]

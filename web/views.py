@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
-from agent import approvals, conversations, handoff, llm, request_types, runner
+from agent import approvals, attachments, conversations, handoff, llm, request_types, runner
 from core import storage, trace
 from shops import repository
 from simulator import faults
@@ -36,13 +36,7 @@ AGENT_EXAMPLES = [
     "Zkontroluj objednávku 100999.",
 ]
 
-# TODO: vygenerovat skutečné obrázky (viz Trello) – zatím jen popisky.
-SAMPLE_SCREENSHOTS = [
-    "Potvrzení platby z bankovnictví",
-    "Sledování zásilky – „nedoručeno“",
-    "E-mail „Objednávka přijata“ bez dalších zpráv",
-]
-
+# Připravené snímky obrazovky pro simulaci příloh (zdroj: docs/screenshots-src).
 
 @ensure_csrf_cookie
 def customer(request):
@@ -53,7 +47,7 @@ def customer(request):
         "shops": shops,
         "shop": _shop_or_404(shop_id),
         "sample_messages": SAMPLE_MESSAGES.get(shop_id, []),
-        "sample_screenshots": SAMPLE_SCREENSHOTS,
+        "sample_screenshots": attachments.for_shop(shop_id),
         "request_types": request_types.as_dict(),
     })
 
@@ -133,7 +127,8 @@ def _chat_payload(conv, mode):
         "shop_id": conv["shop_id"],
         "mode": mode,
         "typing": typing,
-        "messages": conv["messages"],
+        "messages": [{**m, "attachment_url": attachments.url(m["attachment"]) if m.get("attachment") else None}
+                     for m in conv["messages"]],
         "draft": conversations.draft_summary(conv),
     }
 
@@ -180,12 +175,15 @@ def models_api(request):
 
 @require_POST
 def chat_message(request, conversation_id):
-    """Zpráva zákazníka. Odpověď agenta doplní běh agenta (agent loop)."""
-    _conversation_or_404(conversation_id)
+    """Zpráva zákazníka (volitelně se snímkem). Odpověď agenta doplní běh agenta (agent loop)."""
+    conv = _conversation_or_404(conversation_id)
     text = request.POST.get("text", "").strip()
-    if not text:
+    file = request.POST.get("attachment") or None
+    if file and not attachments.get(file, conv["shop_id"]):
+        return JsonResponse({"error": "Neznámá příloha"}, status=400)
+    if not text and not file:
         return JsonResponse({"error": "Prázdná zpráva"}, status=400)
-    conversations.add_message(conversation_id, "customer", text[:2000])
+    conversations.add_message(conversation_id, "customer", text[:2000], attachment=file)
     runner.start_customer_run(conversation_id)
     return JsonResponse({"ok": True})
 

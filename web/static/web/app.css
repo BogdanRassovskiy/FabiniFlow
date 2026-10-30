@@ -190,3 +190,17 @@ button.small { padding: 4px 10px; font-size: 12px; }
 .msg.typing span:nth-child(2) { animation-delay: .15s; }
 .msg.typing span:nth-child(3) { animation-delay: .3s; }
 @keyframes typing { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+.shot img { width: 100%; aspect-ratio: 390 / 844; object-fit: cover; object-position: top; border: 1px solid var(--border); border-radius: 6px; display: block; }
+
+/* Přílohy v chatu */
+.shot { cursor: pointer; border-radius: 8px; outline-offset: 2px; }
+.shot:hover img { border-color: var(--accent); }
+.shot.selected img { border: 2px solid var(--accent); }
+.shot.selected figcaption { color: var(--accent); font-weight: 600; }
+.shots.pulse-hint { animation: hint 0.6s ease-in-out 2; border-radius: 8px; }
+@keyframes hint { 50% { box-shadow: 0 0 0 6px var(--accent); } }
+.attach-preview { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--border); font-size: 13px; }
+.attach-preview img { width: 36px; height: 52px; object-fit: cover; object-position: top; border: 1px solid var(--border); border-radius: 4px; }
+.attach-preview span { flex: 1; }
+.msg-attachment { display: block; margin-bottom: 6px; }
+.msg-attachment img { display: block; width: 120px; max-height: 200px; object-fit: cover; object-position: top; border-radius: 8px; border: 1px solid rgba(0,0,0,.1); }

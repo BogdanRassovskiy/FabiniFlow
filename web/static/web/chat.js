@@ -13,7 +13,9 @@ window.FabiniChat = (function () {
       const mine = perspective === "customer" ? m.role === "customer" : m.role !== "customer";
       const showAuthor = m.role === "operator" || (perspective === "operator" && m.role !== "customer");
       return `<div class="msg ${mine ? "user" : "bot"} role-${m.role}">
-        ${showAuthor ? `<small class="author">${AUTHORS[m.role]}</small>` : ""}${esc(m.text)}</div>`;
+        ${showAuthor ? `<small class="author">${AUTHORS[m.role]}</small>` : ""}${m.attachment_url
+          ? `<a class="msg-attachment" href="${esc(m.attachment_url)}" target="_blank" rel="noopener"><img src="${esc(m.attachment_url)}" alt="Příloha"></a>`
+          : ""}${esc(m.text)}</div>`;
     }).join("");
     if (atBottom) log.scrollTop = log.scrollHeight;
   }

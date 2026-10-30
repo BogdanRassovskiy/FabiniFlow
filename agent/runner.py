@@ -128,6 +128,22 @@ def _loop(run_id: str) -> None:
         _fail(get(run_id), f"Neočekávaná chyba: {exc.__class__.__name__}: {exc}", detail=traceback.format_exc())
 
 
+def _customer_history(run: dict[str, Any]) -> list[dict]:
+    vision = llm.supports_vision(run["model"])
+    if run["llm_calls"] == 0:
+        last = next((m for m in reversed(conversations.get(run["conversation_id"])["messages"])
+                     if m["role"] == "customer"), None)
+        if last and last.get("attachment"):
+            if vision:
+                trace.record(trace.Actor.SCRIPT, "attachment_sent",
+                             f"Snímek {last['attachment']} předán modelu {run['model']} jako obrázek", run_id=run["run_id"])
+            else:
+                trace.record(trace.Actor.SCRIPT, "attachment_skipped",
+                             f"Model {run['model']} neumí obrázky – snímek {last['attachment']} nahrazen poznámkou",
+                             run_id=run["run_id"])
+    return prompts.customer_history(run["conversation_id"], vision=vision)
+
+
 def _loop_inner(run_id: str) -> None:
     run = get(run_id)
     while run["status"] == RUNNING:
@@ -140,7 +156,7 @@ def _loop_inner(run_id: str) -> None:
         ctx = _ctx(run)
         system = prompts.system_prompt(run["channel"], shop_id=run.get("shop_id"),
                                        conversation_id=run.get("conversation_id"))
-        history = prompts.customer_history(run["conversation_id"]) if run["channel"] == tools.CUSTOMER else []
+        history = (_customer_history(run) if run["channel"] == tools.CUSTOMER else [])
         try:
             response = client.chat(model=run["model"],
                                    messages=[{"role": "system", "content": system}, *history, *run["messages"]],

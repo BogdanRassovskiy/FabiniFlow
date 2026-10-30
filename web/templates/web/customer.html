@@ -18,8 +18,12 @@
     <div class="chat-log" id="chat-log">
       <div class="msg bot">{% if shop.language == "sk" %}Dobrý deň, som asistent obchodu {{ shop.name }}. S čím vám môžem pomôcť?{% else %}Dobrý den, jsem asistent obchodu {{ shop.name }}. S čím vám mohu pomoci?{% endif %}</div>
     </div>
+    <div class="attach-preview" id="attach-preview" hidden>
+      <img id="attach-img" alt=""><span id="attach-caption"></span>
+      <button type="button" class="ghost small" id="attach-clear" title="Odebrat přílohu">✕</button>
+    </div>
     <form class="chat-input" id="chat-form">
-      <button type="button" class="ghost" title="Přiložit snímek obrazovky – doplníme" disabled>📎</button>
+      <button type="button" class="ghost" id="attach-btn" title="Přiložit snímek obrazovky">📎</button>
       <input id="chat-text" placeholder="Napište zprávu…" autocomplete="off">
       <button>Odeslat</button>
     </form>
@@ -51,10 +55,10 @@
       </div>
 
       <h2 class="mt">Snímky k přiložení</h2>
-      <p class="muted">Simulace – zákazník vybírá z připravených snímků obrazovky.</p>
-      <div class="shots">
+      <p class="muted">Simulace – kliknutím snímek přiložíte ke zprávě.</p>
+      <div class="shots" id="shots">
         {% for s in sample_screenshots %}
-          <figure class="shot"><div class="shot-placeholder">obrázek bude doplněn</div><figcaption>{{ s }}</figcaption></figure>
+          <figure class="shot" data-file="{{ s.file }}" data-caption="{{ s.caption }}" tabindex="0" role="button"><img src="{% static 'web/screenshots/'|add:s.file %}" alt="{{ s.caption }}" loading="lazy"><figcaption>{{ s.caption }}</figcaption></figure>
         {% endfor %}
       </div>
     </section>
@@ -75,6 +79,19 @@
   const input = document.getElementById("chat-text");
   let convId = new URLSearchParams(location.search).get("c") || safeGet(STORE_KEY);
   let previous = {};
+  let attachment = null;
+  const preview = document.getElementById("attach-preview");
+
+  function setAttachment(shot) {
+    attachment = shot ? shot.dataset.file : null;
+    document.querySelectorAll(".shot").forEach((s) => s.classList.toggle("selected", s === shot));
+    preview.hidden = !shot;
+    if (shot) {
+      document.getElementById("attach-img").src = shot.querySelector("img").src;
+      document.getElementById("attach-caption").textContent = shot.dataset.caption;
+      input.focus();
+    }
+  }
 
   function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function safeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -112,14 +129,27 @@
   document.getElementById("chat-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const text = input.value.trim();
-    if (!text || !convId) return;
-    input.value = "";
-    await FabiniChat.post(`/api/chat/${convId}/message/`, {text});
+    if ((!text && !attachment) || !convId) return;
+    const data = attachment ? {text, attachment} : {text};
+    input.value = ""; setAttachment(null);
+    await FabiniChat.post(`/api/chat/${convId}/message/`, data);
     poll();
   });
 
   document.querySelectorAll(".chip").forEach((chip) =>
     chip.addEventListener("click", () => { input.value = chip.dataset.text; input.focus(); }));
+
+  document.querySelectorAll(".shot").forEach((shot) => {
+    const pick = () => setAttachment(shot.classList.contains("selected") ? null : shot);
+    shot.addEventListener("click", pick);
+    shot.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+  });
+  document.getElementById("attach-clear").addEventListener("click", () => setAttachment(null));
+  document.getElementById("attach-btn").addEventListener("click", () => {
+    const shots = document.getElementById("shots");
+    shots.scrollIntoView({behavior: "smooth", block: "center"});
+    shots.classList.add("pulse-hint"); setTimeout(() => shots.classList.remove("pulse-hint"), 1200);
+  });
 
   document.getElementById("new-conv").addEventListener("click", async () => {
     await startConversation(); log.innerHTML = greeting; body.innerHTML = emptyBody; poll();
