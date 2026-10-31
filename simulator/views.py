@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import random
+import unicodedata
 from datetime import datetime
 
 from django.http import JsonResponse
@@ -36,6 +37,33 @@ def _order_or_404(order_id: str):
 
 
 # --- E-shop -----------------------------------------------------------------
+
+def _fold(text: str) -> str:
+    """Malá písmena bez diakritiky – „Prochazka“ najde „Procházka“."""
+    return "".join(c for c in unicodedata.normalize("NFD", text.lower()) if not unicodedata.combining(c))
+
+
+@require_GET
+@simulated("eshop")
+def search_orders(request):
+    """Vyhledání objednávek podle jména, e-mailu, města nebo čísla (všechna slova musí sedět)."""
+    terms = _fold(request.GET.get("q", "")).split()
+    if not terms or len("".join(terms)) < 3:
+        return error_response(400, "QUERY_TOO_SHORT", "Zadejte aspoň 3 znaky (jméno, e-mail nebo číslo objednávky)")
+    shop = request.GET.get("shop")
+
+    def matches(order):
+        c = order["customer"]
+        haystack = _fold(" ".join([order["order_id"], c["name"], c["email"], c.get("city", "")]))
+        return (not shop or order["shop_id"] == shop) and all(t in haystack for t in terms)
+
+    found = sorted(storage.list_all("orders", matches), key=lambda o: o["created_at"], reverse=True)
+    return JsonResponse({"data": {"count": len(found), "orders": [
+        {"order_id": o["order_id"], "shop_id": o["shop_id"], "created_at": o["created_at"], "status": o["status"],
+         "customer": o["customer"]["name"], "email": o["customer"]["email"], "total": o["total"],
+         "currency": o["currency"]}
+        for o in found[:10]]}})
+
 
 @require_GET
 @simulated("eshop")

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Callable
+from urllib.parse import urlencode
 
 from agent import api_client, conversations, handoff, request_types
 from core import trace
@@ -94,6 +95,11 @@ def _api(method: str, path: str, order_arg: bool = True):
     return handler
 
 
+def _search_orders(ctx: RunContext, args: dict[str, Any]) -> dict[str, Any]:
+    params = {"q": args["query"], **({"shop": args["shop_id"]} if args.get("shop_id") else {})}
+    return api_client.call("GET", "/eshop/orders?" + urlencode(params), run_id=ctx.run_id)
+
+
 def _create_ticket(ctx: RunContext, args: dict[str, Any]) -> dict[str, Any]:
     if ctx.channel == CUSTOMER and args.get("order_id"):
         denied = _customer_scope(ctx, args["order_id"])
@@ -144,6 +150,13 @@ def _submit_result(ctx: RunContext, args: dict[str, Any]) -> dict[str, Any]:
 
 
 TOOLS: dict[str, Tool] = {t.name: t for t in [
+    Tool("search_orders", "Najde objednávky podle jména zákazníka, e-mailu, města nebo části čísla "
+         "(bez ohledu na diakritiku). Použij, když v požadavku chybí číslo objednávky. "
+         "Vrací nejnovější objednávky jako první (max. 10).",
+         _params({"query": {"type": "string", "description": "Např. „Tomáš Procházka“ nebo „prochazka@example.cz“"},
+                  "shop_id": {"type": "string", "enum": ["fabini_cz", "fabini_sk"],
+                              "description": "Volitelně jen jeden obchod"}}, ["query"]),
+         _search_orders, channels=frozenset({OPS}), dedupe=True),
     Tool("get_order", "Načte objednávku z e-shopu: položky, zákazník, stav.",
          _params(ORDER_ID, ["order_id"]), _api("GET", "/eshop/orders/{order_id}"), dedupe=True),
     Tool("get_payment", "Stav platby objednávky v platební bráně.",

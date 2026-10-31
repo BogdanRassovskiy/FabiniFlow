@@ -33,6 +33,7 @@ Oba e-shopy expedují z jednoho **centrálního skladu (WMS FABINI)**. *(demo)*
 ## Systémy a nástroje
 | Nástroj | Systém | K čemu |
 |---|---|---|
+| `search_orders` | e-shop | najde objednávky podle jména, e-mailu nebo města, když chybí číslo *(jen administrace)* |
 | `get_order` | e-shop | položky, zákazník, stav objednávky |
 | `get_payment` | platební brána | zda a kdy bylo zaplaceno |
 | `get_fulfillment` | WMS (sklad) | zda sklad objednávku přijal, vychystává, odeslal |

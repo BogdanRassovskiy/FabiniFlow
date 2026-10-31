@@ -59,7 +59,7 @@ Model se vybírá vpravo nahoře, vedle je tlačítko **↺ Reset dema**. Výcho
 | Vyhodnotit výsledky a pokračovat | Smyčka agenta v `agent/runner.py` se opakuje, dokud model volá nástroje. Po úspěšném `retry_sync` si například znovu načte stav. |
 | Provést povolenou akci nebo požádat o schválení | Čtení proběhne hned. `retry_sync` a `create_ticket` jsou rizikové: běh se pozastaví, v administraci se objeví žádost a po schválení nebo zamítnutí agent pokračuje. |
 | Vrátit strukturovaný výsledek s kroky | Agent končí voláním `submit_result` (stav, shrnutí, příčina, doporučení). Provedené akce a kroky doplní kód z historie, model je nemůže vymyslet. |
-| Nástroje get_order … create_ticket | Všech šest je implementováno jako HTTP volání na simulované systémy (`simulator/`). |
+| Nástroje get_order … create_ticket | Všech šest je implementováno jako HTTP volání na simulované systémy (`simulator/`).  Navíc `search_orders`: když v požadavku chybí číslo objednávky, agent ji najde podle jména, e-mailu nebo města. |
 | Ošetření chyb | Timeout 5 s, přechodné chyby (502/503/504, síť) se opakují s backoffem. Trvalé chyby dostane agent jako výsledek a musí s nimi pracovat. Chyby modelu se také opakují a nakonec běh korektně ukončí. |
 | Žádné nekonečné smyčky | Max. 12 kroků modelu a 30 volání nástrojů na běh. Každý nástroj má vlastní limit (`retry_sync` a `create_ticket` jen 1×). Stejné čtení se neprovede dvakrát, vrátí se z cache. |
 | Schvalování rizikových operací | Fronta žádostí v administraci. O každé se rozhoduje jen jednou a rozhodnutí se zapíše do trace jako HUMAN. |
@@ -130,6 +130,9 @@ Proto jsou v trace odlišené rozhodnutí LLM a zásahy SCRIPT.
   takže se nenaučí, jak agenta obejít.
 - **Snímky obrazovky.** Zákazník přiloží připravený snímek (potvrzení platby, sledování zásilky, e-mail).
   Model ho přečte, ale údaje z něj bere jen jako tvrzení zákazníka a ověřuje je nástroji.
+- **Vyhledání objednávky podle zákazníka** (`search_orders`), např. *„Zákazník Tomáš Procházka si stěžuje,
+  že mu nepřišla objednávka“*. Hledá bez ohledu na diakritiku. Jen v administraci: v zákaznickém chatu
+  by šlo o únik cizích objednávek, tam se zákazník ověřuje číslem objednávky a e-mailem.
 - **Dva obchody** (fabini.cz v češtině a Kč, fabini.sk ve slovenštině a €) s vlastními objednávkami a skladem.
 - **Simulace výpadků** nastavitelná z administrace, i jen pro vybrané objednávky.
 - **Výběr modelu** z OpenRouter přímo v UI (jen modely s podporou nástrojů, s cenou).
