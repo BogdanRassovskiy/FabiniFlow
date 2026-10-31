@@ -74,9 +74,14 @@ button:disabled, input:disabled { opacity: .55; cursor: not-allowed; }
 .agent { border-left: 3px solid var(--llm); }
 
 /* Zákaznický chat */
-.chat-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 16px; }
-@media (max-width: 800px) { .chat-layout { grid-template-columns: 1fr; } }
-.chat { display: flex; flex-direction: column; min-height: 480px; padding: 0; margin-bottom: 0; }
+.chat-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 16px; align-items: start; }
+/* Chat má výšku okna a drží se nahoře – pravý sloupec ho neroztahuje, pole pro zprávu je vždy na očích. */
+.chat { display: flex; flex-direction: column; height: calc(100vh - 210px); min-height: 420px;
+        position: sticky; top: 72px; padding: 0; margin-bottom: 0; }
+@media (max-width: 800px) {
+  .chat-layout { grid-template-columns: 1fr; }
+  .chat { position: static; height: 75vh; }
+}
 .chat-head { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; }
 .chat-log { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
 .msg { max-width: 80%; padding: 8px 12px; border-radius: 12px; }
