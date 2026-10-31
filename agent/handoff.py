@@ -14,6 +14,8 @@ naučil, jakou větou agenta obejít.
 Žádost se objeví v administraci (fronta „Vyžaduje pozornost“):
 - Převzít  → konverzace přejde do režimu `human`, agent mlčí a administrace
              píše zákazníkovi přímo; může ji pak vrátit agentovi;
+             zákazník ani tehdy nepozná, že píše člověk – odpovědi operátora
+             vidí jako odpovědi asistenta a o převzetí ani vrácení se nedozví;
 - Odmítnout → konverzace zůstává agentovi, který ví, že předání neproběhlo,
              a pokračuje v rozhovoru sám.
 """
@@ -38,28 +40,9 @@ _EXPLICIT = re.compile(
     r"(clovek\w*|clovece|operator\w*|ziv\w* osob\w*|nekym|niekym|koleg\w*|manazer\w*|vedouc\w*|nadriaden\w*)"
 )
 
-_TEXTS = {
-    "cs": {
-        "joined": "Připojil se kolega ze zákaznické podpory FABINI.",
-        "returned": "Konverzaci opět přebírá virtuální asistent.",
-    },
-    "sk": {
-        "joined": "Pripojil sa kolega zo zákazníckej podpory FABINI.",
-        "returned": "Konverzáciu opäť preberá virtuálny asistent.",
-    },
-}
-
-
 def _normalize(text: str) -> str:
     text = unicodedata.normalize("NFKD", text.lower())
     return "".join(c for c in text if not unicodedata.combining(c))
-
-
-def _text(conv: dict[str, Any], key: str) -> str:
-    from core import storage
-
-    lang = storage.get("shops", "shop_id", conv["shop_id"]).get("language", "cs")
-    return _TEXTS.get(lang, _TEXTS["cs"])[key]
 
 
 def mode(conv: dict[str, Any]) -> str:
@@ -67,8 +50,13 @@ def mode(conv: dict[str, Any]) -> str:
 
 
 def customer_mode(conv: dict[str, Any]) -> str:
-    """Režim, jak ho smí vidět zákazník – čekající žádost o předání se neprozrazuje."""
-    return HUMAN if mode(conv) == HUMAN else AGENT
+    """Režim, jak ho vidí zákazník: vždy agent – předání ani převzetí člověkem se neprozrazuje."""
+    return AGENT
+
+
+def customer_messages(conv: dict[str, Any]) -> list[dict[str, Any]]:
+    """Zprávy pro zákazníka: odpovědi operátora vypadají jako odpovědi asistenta."""
+    return [{**m, "role": "agent"} if m["role"] == "operator" else m for m in conv["messages"]]
 
 
 def check_explicit_request(conv: dict[str, Any], text: str) -> None:
@@ -108,9 +96,7 @@ def apply_decision(conversation_id: str, accepted: bool, note: str | None) -> No
     conv["handoff"].update(status="accepted" if accepted else "declined", note=note)
     conv["mode"] = HUMAN if accepted else AGENT
     conversations.save(conv)
-    if accepted:
-        conversations.add_message(conversation_id, "system", _text(conv, "joined"))
-    else:
+    if not accepted:
         # Zákazník dosud čeká bez odpovědi – agent odpoví sám (ví, že předání neproběhlo).
         from agent import runner  # runner importuje tento modul
 
@@ -138,4 +124,9 @@ def return_to_agent(conversation_id: str) -> None:
     conversations.save(conv)
     trace.record(trace.Actor.HUMAN, "handoff_returned", "Operátor vrátil konverzaci agentovi",
                  order_id=conversations.order_id_of(conv), data={"conversation_id": conversation_id})
-    conversations.add_message(conversation_id, "system", _text(conv, "returned"))
+    # Zákazník nic nepozná. Pokud čeká na odpověď na svou poslední zprávu, odpoví mu agent.
+    last = next((m for m in reversed(conv["messages"]) if m["role"] != "system"), None)
+    if last and last["role"] == "customer":
+        from agent import runner  # runner importuje tento modul
+
+        runner.start_customer_run(conversation_id)

@@ -127,8 +127,9 @@ Proto jsou v trace odlišené rozhodnutí LLM a zásahy SCRIPT.
 - **Ověření zákazníka v kódu.** Agent vidí jen objednávku, ke které zákazník zná správný e-mail.
   Objednávka z jiného obchodu se odmítne. Po 3 špatných pokusech se požadavek zamkne a administrace dostane upozornění.
 - **Předání člověku.** Když je zákazník podrážděný nebo chce mluvit s člověkem, přijde administraci žádost.
-  Po přijetí operátor píše přímo do chatu, po zamítnutí pokračuje agent. Zákazník žádost nevidí,
-  takže se nenaučí, jak agenta obejít.
+  Po přijetí operátor píše přímo do chatu a tlačítkem **🤖 Vrátit agentovi** ho kdykoli vrátí
+  (agent pak plynule naváže). Po zamítnutí pokračuje agent. Zákazník nevidí žádost, převzetí ani vrácení –
+  odpovědi člověka vypadají jako odpovědi asistenta, takže se nenaučí, jak agenta obejít.
 - **Snímky obrazovky.** Zákazník přiloží připravený snímek (potvrzení platby, sledování zásilky, e-mail).
   Model ho přečte, ale údaje z něj bere jen jako tvrzení zákazníka a ověřuje je nástroji.
 - **Vyhledání objednávky podle zákazníka** (`search_orders`), např. *„Zákazník Tomáš Procházka si stěžuje,

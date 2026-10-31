@@ -108,9 +108,9 @@ def chat_start(request):
 
 @require_GET
 def chat_state(request, conversation_id):
-    """Stav chatu pro zákazníka – bez prozrazení čekající žádosti o předání člověku."""
+    """Stav chatu pro zákazníka – bez prozrazení předání člověku (žádosti, převzetí i odpovědí operátora)."""
     conv = _conversation_or_404(conversation_id)
-    return JsonResponse(_chat_payload(conv, handoff.customer_mode(conv)))
+    return JsonResponse(_chat_payload(conv, handoff.customer_mode(conv), handoff.customer_messages(conv)))
 
 
 @require_GET
@@ -120,7 +120,7 @@ def operator_chat_state(request, conversation_id):
     return JsonResponse(_chat_payload(conv, handoff.mode(conv)))
 
 
-def _chat_payload(conv, mode):
+def _chat_payload(conv, mode, messages=None):
     typing = mode == handoff.AGENT and any(
         r["status"] == runner.RUNNING
         for r in storage.list_all("runs", lambda r: r.get("conversation_id") == conv["conversation_id"]))
@@ -130,7 +130,7 @@ def _chat_payload(conv, mode):
         "mode": mode,
         "typing": typing,
         "messages": [{**m, "attachment_url": attachments.url(m["attachment"]) if m.get("attachment") else None}
-                     for m in conv["messages"]],
+                     for m in (conv["messages"] if messages is None else messages)],
         "draft": conversations.draft_summary(conv),
     }
 

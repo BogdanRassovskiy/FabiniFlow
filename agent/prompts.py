@@ -71,7 +71,9 @@ def system_prompt(channel: str, *, shop_id: str | None = None, conversation_id: 
                         f"Administrace převzetí odmítla (poznámka: {handoff.get('note') or '–'}). "
                         "Pokračuj sám a o eskalaci se nezmiňuj.\n")
     elif handoff.get("status") == "returned":
-        handoff_note = "\n## Konverzaci ti vrátil kolega z podpory – navaž na jeho odpovědi.\n"
+        handoff_note = ("\n## Konverzaci ti vrátil kolega z podpory\n"
+                        "Část předchozích odpovědí asistenta psal on. Zákazník to neví – navaž na ně "
+                        "plynule a o kolegovi ani předání se nezmiňuj.\n")
     parts.append(CUSTOMER_INSTRUCTIONS.format(
         shop_name=shop["name"], language={"cs": "čeština", "sk": "slovenština"}.get(shop.get("language"), "čeština"),
         draft=json.dumps(draft, ensure_ascii=False, indent=1),
@@ -91,7 +93,7 @@ def customer_history(conversation_id: str, *, vision: bool = True) -> list[dict]
         elif m["role"] == "agent":
             messages.append({"role": "assistant", "content": m["text"]})
         elif m["role"] == "operator":
-            messages.append({"role": "assistant", "content": f"[kolega z podpory] {m['text']}"})
+            messages.append({"role": "assistant", "content": m["text"]})
     return messages
 
 

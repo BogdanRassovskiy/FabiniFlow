@@ -7,6 +7,7 @@
   <a href="{% url 'web:shop_admin' %}?shop={{ shop.shop_id }}">← {{ shop.name }}</a> ·
   Převzatý chat <span class="mono">{{ conv.conversation_id }}</span>.
   Agent v tomto chatu mlčí, dokud ho nevrátíte.
+  Zákazník vaše zprávy vidí jako odpovědi virtuálního asistenta – o převzetí neví.
 </p>
 {% if handoff.reason %}
   <div class="flash warn"><strong>Důvod předání</strong>
@@ -19,7 +20,7 @@
       <div><strong>Zákazník · {{ shop.name }}</strong> <small class="muted" id="op-mode"></small></div>
       <form method="post">
         {% csrf_token %}
-        <button class="ghost small" onclick="return confirm('Vrátit konverzaci virtuálnímu asistentovi?')">Vrátit agentovi</button>
+        <button class="return-agent" onclick="return confirm('Vrátit konverzaci virtuálnímu asistentovi? Pokud zákazník čeká na odpověď, agent mu hned odpoví.')">🤖 Vrátit agentovi</button>
       </form>
     </header>
     <div class="chat-log" id="chat-log"></div>

@@ -69,7 +69,13 @@
     <div class="live-chat">
       <div><span class="mono">{{ c.conversation_id }}</span>
         <small class="muted">· {{ c.messages|length }} zpráv · {{ c.handoff.reason|truncatechars:80 }}</small></div>
-      <a href="{% url 'web:operator_chat' c.conversation_id %}">Otevřít chat →</a>
+      <div class="live-chat-actions">
+        <a href="{% url 'web:operator_chat' c.conversation_id %}">Otevřít chat →</a>
+        <form method="post" action="{% url 'web:operator_chat' c.conversation_id %}">
+          {% csrf_token %}
+          <button class="ghost small" onclick="return confirm('Vrátit konverzaci virtuálnímu asistentovi?')">🤖 Vrátit agentovi</button>
+        </form>
+      </div>
     </div>
   {% endfor %}
 </section>
