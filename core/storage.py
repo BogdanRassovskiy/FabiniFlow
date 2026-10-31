@@ -18,6 +18,7 @@ import shutil
 import tempfile
 import threading
 from contextlib import contextmanager
+from functools import wraps
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
@@ -57,6 +58,19 @@ def _write(collection: str, records: list[Record]) -> None:
     except BaseException:
         Path(tmp).unlink(missing_ok=True)
         raise
+
+
+def atomic(fn: Callable) -> Callable:
+    """Dekorátor: celá operace čti–uprav–zapiš proběhne pod zámkem úložiště.
+
+    Bez toho by např. zpráva zákazníka a souběžný zápis agenta (oba načtou
+    konverzaci, každý ji upraví a uloží) jeden druhému přepsaly změny.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with _lock:
+            return fn(*args, **kwargs)
+    return wrapper
 
 
 @contextmanager

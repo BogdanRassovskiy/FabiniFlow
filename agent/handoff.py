@@ -27,7 +27,7 @@ import unicodedata
 from typing import Any
 
 from agent import approvals, conversations
-from core import trace
+from core import storage, trace
 
 AGENT = "agent"
 PENDING = "handoff_pending"
@@ -66,6 +66,7 @@ def check_explicit_request(conv: dict[str, Any], text: str) -> None:
                         requested_by=trace.Actor.SCRIPT)
 
 
+@storage.atomic
 def request_handoff(conversation_id: str, *, reason: str, requested_by: trace.Actor = trace.Actor.LLM,
                     run_id: str | None = None) -> dict[str, Any]:
     conv = conversations.get(conversation_id)
@@ -90,6 +91,7 @@ def request_handoff(conversation_id: str, *, reason: str, requested_by: trace.Ac
     return item
 
 
+@storage.atomic
 def apply_decision(conversation_id: str, accepted: bool, note: str | None) -> None:
     """Volá se po rozhodnutí administrace (agent.approvals.decide)."""
     conv = conversations.get(conversation_id)
@@ -103,6 +105,7 @@ def apply_decision(conversation_id: str, accepted: bool, note: str | None) -> No
         runner.start_customer_run(conversation_id)
 
 
+@storage.atomic
 def operator_message(conversation_id: str, text: str, *, operator: str = "admin") -> dict[str, Any]:
     conv = conversations.get(conversation_id)
     if mode(conv) != HUMAN:
@@ -115,6 +118,7 @@ def operator_message(conversation_id: str, text: str, *, operator: str = "admin"
     return conversations.add_message(conversation_id, "operator", text)
 
 
+@storage.atomic
 def return_to_agent(conversation_id: str) -> None:
     conv = conversations.get(conversation_id)
     if mode(conv) != HUMAN:

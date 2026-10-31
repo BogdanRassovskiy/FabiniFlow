@@ -61,6 +61,7 @@ def save(conv: dict[str, Any]) -> dict[str, Any]:
     return storage.update(COLLECTION, "conversation_id", conv["conversation_id"], conv)
 
 
+@storage.atomic
 def add_message(conversation_id: str, role: str, text: str, attachment: str | None = None) -> dict[str, Any]:
     """role: customer | agent | operator | system (systémová poznámka viditelná oběma stranám)."""
     conv = get(conversation_id)
@@ -75,6 +76,7 @@ def add_message(conversation_id: str, role: str, text: str, attachment: str | No
 
 # --- Draft požadavku ---------------------------------------------------------
 
+@storage.atomic
 def set_request_type(conversation_id: str, type_key: str, *, run_id: str | None = None) -> dict[str, Any]:
     conv = get(conversation_id)
     _ensure_editable(conv)
@@ -91,6 +93,7 @@ def set_request_type(conversation_id: str, type_key: str, *, run_id: str | None 
     return draft_summary(conv)
 
 
+@storage.atomic
 def update_request_field(conversation_id: str, key: str, value: str, *,
                          source: str = "customer", run_id: str | None = None) -> dict[str, Any]:
     conv = get(conversation_id)
@@ -121,6 +124,7 @@ def update_request_field(conversation_id: str, key: str, value: str, *,
     return draft_summary(conv)
 
 
+@storage.atomic
 def submit_request(conversation_id: str, *, summary: str, priority: str = "normal",
                    run_id: str | None = None) -> dict[str, Any]:
     conv = get(conversation_id)

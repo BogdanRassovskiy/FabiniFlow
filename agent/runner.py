@@ -58,6 +58,7 @@ def start_ops_run(text: str, *, shop_id: str | None = None) -> dict[str, Any]:
     return run
 
 
+@storage.atomic  # kontrola „neběží už jiný běh?“ a založení nového běhu musí být jeden krok
 def start_customer_run(conversation_id: str) -> dict[str, Any] | None:
     conv = conversations.get(conversation_id)
     if handoff.mode(conv) != handoff.AGENT:
@@ -65,11 +66,12 @@ def start_customer_run(conversation_id: str) -> dict[str, Any] | None:
     active = [r for r in storage.list_all(COLLECTION, lambda r: r.get("conversation_id") == conversation_id)
               if r["status"] in (RUNNING, AWAITING)]
     if active:
-        # Zákazník napsal během běhu – odpoví se po jeho dokončení.
-        storage.update(COLLECTION, "run_id", active[0]["run_id"], {"followup": True})
+        # Zákazník napsal během běhu – běžící agent zprávu uvidí v dalším kroku,
+        # a pokud na ni do konce běhu neodpoví, spustí se nový běh (_followup).
         return None
     run = _create("customer", shop_id=conv["shop_id"], conversation_id=conversation_id,
-                  input=(conv["messages"][-1]["text"] if conv["messages"] else ""))
+                  input=(conv["messages"][-1]["text"] if conv["messages"] else ""),
+                  seen_messages=len(conv["messages"]))
     _spawn(_loop, run["run_id"])
     return run
 
@@ -130,6 +132,7 @@ def _loop(run_id: str) -> None:
 
 def _customer_history(run: dict[str, Any]) -> list[dict]:
     vision = llm.supports_vision(run["model"])
+    run["history_len"] = len(conversations.get(run["conversation_id"])["messages"])
     if run["llm_calls"] == 0:
         last = next((m for m in reversed(conversations.get(run["conversation_id"])["messages"])
                      if m["role"] == "customer"), None)
@@ -204,6 +207,16 @@ def _final_text(run: dict[str, Any], content: str) -> None:
         return
 
     conv = conversations.get(run["conversation_id"])
+    unseen = conv["messages"][run.get("history_len", len(conv["messages"])):]
+    if content and handoff.mode(conv) == handoff.AGENT and any(m["role"] == "customer" for m in unseen):
+        # Zákazník mezitím napsal další zprávu – odpověď by ji ignorovala, model ji přepíše s novou historií.
+        trace.record(trace.Actor.SCRIPT, "reply_outdated",
+                     "Zákazník mezitím napsal další zprávu – odpověď se neodešle, agent odpoví znovu s aktuální historií",
+                     run_id=run_id)
+        run["messages"].pop()  # zahodit zastaralou odpověď z kontextu běhu
+        _save(run)
+        _loop_inner(run_id)
+        return
     if handoff.mode(conv) != handoff.AGENT:
         trace.record(trace.Actor.SCRIPT, "reply_suppressed",
                      "Odpověď agenta zákazníkovi potlačena – chat čeká na člověka / vede ho člověk", run_id=run_id)
@@ -369,8 +382,14 @@ def _fail(run, error: str, detail: str | None = None) -> None:
 
 
 def _followup(run) -> None:
-    """Pokud zákazník mezitím napsal další zprávu, agent na ni odpoví novým během."""
-    if run["channel"] == tools.CUSTOMER and get(run["run_id"]).get("followup"):
+    """Zůstala-li po běhu poslední zpráva zákazníka bez odpovědi (napsal během běhu), odpoví nový běh."""
+    if run["channel"] != tools.CUSTOMER:
+        return
+    messages = conversations.get(run["conversation_id"])["messages"]
+    last = next((m for m in reversed(messages) if m["role"] != "system"), None)
+    # Jen zprávy, které přišly až během tohoto běhu – jinak by prázdná odpověď modelu vedla ke smyčce.
+    new = messages[run.get("seen_messages", len(messages)):]
+    if last and last["role"] == "customer" and any(m["role"] == "customer" for m in new):
         start_customer_run(run["conversation_id"])
 
 

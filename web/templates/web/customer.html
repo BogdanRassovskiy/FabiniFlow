@@ -124,11 +124,7 @@
       if (res.status === 404) { await startConversation(); return; }
       const state = await res.json();
       document.getElementById("conv-id").textContent = "· " + convId;
-      FabiniChat.renderMessages(log, state.messages, {greeting, perspective: "customer"});
-      if (state.typing) {
-        log.insertAdjacentHTML("beforeend", '<div class="msg bot typing"><span></span><span></span><span></span></div>');
-        log.scrollTop = log.scrollHeight;
-      }
+      FabiniChat.renderMessages(log, state.messages, {greeting, perspective: "customer", typing: state.typing});
       previous = FabiniChat.renderDraft(body, statusPill, state.draft, previous, emptyBody);
       const [tone, text] = MODES[state.mode] || MODES.agent;
       modeBar.className = "chat-mode " + tone; modeBar.textContent = text; modeBar.hidden = !text;
@@ -161,7 +157,7 @@
   });
 
   document.getElementById("new-conv").addEventListener("click", async () => {
-    await startConversation(); log.innerHTML = greeting; body.innerHTML = emptyBody; poll();
+    await startConversation(); log.innerHTML = greeting; delete log.dataset.signature; body.innerHTML = emptyBody; poll();
   });
 
   (async () => { if (!convId) await startConversation(); poll(); setInterval(poll, 2000); })();

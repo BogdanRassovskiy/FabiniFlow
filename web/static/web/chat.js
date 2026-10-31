@@ -6,8 +6,13 @@ window.FabiniChat = (function () {
   // perspective: "customer" – zákazník vpravo; "operator" – operátor a agent vpravo.
   const AUTHORS = {agent: "Virtuální asistent", operator: "Kolega z podpory", customer: "Zákazník"};
 
-  function renderMessages(log, messages, {greeting = "", perspective = "customer"} = {}) {
-    const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+  // Překreslí se jen při změně – jinak by polling každé 2 s blikal (obrázky, animace „píše…“).
+  function renderMessages(log, messages, {greeting = "", perspective = "customer", typing = false} = {}) {
+    const signature = JSON.stringify([messages.length, messages.at(-1)?.ts, messages.at(-1)?.text, typing, perspective]);
+    if (log.dataset.signature === signature) return;
+    log.dataset.signature = signature;
+    const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40 || log.dataset.rendered !== "1";
+    log.dataset.rendered = "1";
     log.innerHTML = greeting + messages.map((m) => {
       if (m.role === "system") return `<div class="msg system">${esc(m.text)}</div>`;
       const mine = perspective === "customer" ? m.role === "customer" : m.role !== "customer";
@@ -16,7 +21,7 @@ window.FabiniChat = (function () {
         ${showAuthor ? `<small class="author">${AUTHORS[m.role]}</small>` : ""}${m.attachment_url
           ? `<a class="msg-attachment" href="${esc(m.attachment_url)}" target="_blank" rel="noopener"><img src="${esc(m.attachment_url)}" alt="Příloha"></a>`
           : ""}${esc(m.text)}</div>`;
-    }).join("");
+    }).join("") + (typing ? '<div class="msg bot typing"><span></span><span></span><span></span></div>' : "");
     if (atBottom) log.scrollTop = log.scrollHeight;
   }
 
