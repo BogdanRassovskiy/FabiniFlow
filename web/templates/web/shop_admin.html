@@ -94,6 +94,8 @@
     <div class="run-head">
       <span class="pill neutral" id="run-status"></span>
       <small class="muted" id="run-meta"></small>
+      <button type="button" class="ghost small steps-toggle" id="steps-toggle"
+              title="Skrýt nebo zobrazit jednotlivé kroky agenta (rozhodnutí LLM, volání nástrojů)">Skrýt průběh</button>
     </div>
     <ol class="timeline" id="run-timeline"></ol>
     <div id="run-result"></div>
@@ -253,6 +255,25 @@
 
   function watch() { if (timer) clearInterval(timer); poll(); timer = setInterval(poll, 1000); }
   if (runId) watch();
+})();
+</script>
+<script>
+// Skrytí průběhu: zobrazí se jen stav a výsledek běhu, kroky agenta zůstanou v záložce Trace log.
+(function () {
+  const box = document.getElementById("agent-run"), btn = document.getElementById("steps-toggle");
+  const KEY = "fabini-hide-steps";
+  function apply(hidden) {
+    box.classList.toggle("steps-hidden", hidden);
+    btn.textContent = hidden ? "Zobrazit průběh" : "Skrýt průběh";
+    btn.setAttribute("aria-pressed", String(hidden));
+  }
+  let hidden = false;
+  try { hidden = localStorage.getItem(KEY) === "1"; } catch (e) {}
+  apply(hidden);
+  btn.addEventListener("click", () => {
+    hidden = !hidden; apply(hidden);
+    try { localStorage.setItem(KEY, hidden ? "1" : "0"); } catch (e) {}
+  });
 })();
 </script>
 <script>
