@@ -54,6 +54,15 @@
         {% endfor %}
       </div>
 
+      <h2 class="mt">Testovací zákazníci</h2>
+      <p class="muted">Agent ověří zákazníka číslem objednávky a e-mailem z objednávky. Kliknutím e-mail vložíte do chatu.</p>
+      <table class="demo-customers">
+        {% for o in demo_customers %}
+          <tr><td class="mono">{{ o.order_id }}</td><td>{{ o.customer.name }}</td>
+              <td><button type="button" class="chip" data-text="{{ o.customer.email }}">{{ o.customer.email }}</button></td></tr>
+        {% endfor %}
+      </table>
+
       <h2 class="mt">Snímky k přiložení</h2>
       <p class="muted">Simulace – kliknutím snímek přiložíte ke zprávě.</p>
       <div class="shots" id="shots">

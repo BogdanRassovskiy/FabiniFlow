@@ -48,6 +48,8 @@ def customer(request):
         "shop": _shop_or_404(shop_id),
         "sample_messages": SAMPLE_MESSAGES.get(shop_id, []),
         "sample_screenshots": attachments.for_shop(shop_id),
+        "demo_customers": sorted(storage.list_all("orders", lambda o: o["shop_id"] == shop_id),
+                                 key=lambda o: o["order_id"]),
         "request_types": request_types.as_dict(),
     })
 

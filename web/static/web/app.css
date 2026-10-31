@@ -204,3 +204,8 @@ button.small { padding: 4px 10px; font-size: 12px; }
 .attach-preview span { flex: 1; }
 .msg-attachment { display: block; margin-bottom: 6px; }
 .msg-attachment img { display: block; width: 120px; max-height: 200px; object-fit: cover; object-position: top; border-radius: 8px; border: 1px solid rgba(0,0,0,.1); }
+
+/* Testovací zákazníci (nápověda pro demo) */
+.demo-customers { width: 100%; border-collapse: collapse; font-size: 12px; }
+.demo-customers td { padding: 3px 4px; border-top: 1px solid var(--border); vertical-align: middle; }
+.demo-customers .chip { font-size: 11px; padding: 2px 6px; width: 100%; overflow-wrap: anywhere; }

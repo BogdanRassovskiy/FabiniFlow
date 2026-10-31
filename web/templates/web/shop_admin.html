@@ -130,7 +130,7 @@
         <tr>
           <td class="mono">{{ o.order_id }}</td>
           <td>{{ o.created_at|dt }}</td>
-          <td>{{ o.customer.name }}<br><small class="muted">{{ o.customer.city }}</small></td>
+          <td>{{ o.customer.name }}<br><small class="muted">{{ o.customer.email }} · {{ o.customer.city }}</small></td>
           <td class="num">{{ o.total|money:o.currency }}</td>
           <td><span class="pill {{ o.status|tone }}">{{ o.status|label }}</span></td>
           <td><span class="pill {{ o.payment.status|tone }}">{{ o.payment.status|label }}</span>

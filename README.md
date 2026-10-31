@@ -79,8 +79,9 @@ agent ověří nový stav a vrátí `resolved`.
 
 **2. Úspěch: zákaznický chat**
 Na záložce Zákazník (fabini.cz) napište *„Objednávku 100245 jsem zaplatil, ale nebyla odeslána“*
-nebo přiložte snímek potvrzení platby. Agent zjistí typ požadavku, vyžádá si e-mail
-(ověří ho proti objednávce), prověří objednávku a založí požadavek `REQ-…`.
+nebo přiložte snímek potvrzení platby. Agent zjistí typ požadavku a vyžádá si e-mail z objednávky
+(pro 100245 je to `tomas.prochazka@example.cz`; e-maily všech testovacích zákazníků jsou v panelu
+**Testovací zákazníci** vpravo a v přehledu objednávek v administraci). Po ověření prověří objednávku a založí požadavek `REQ-…`.
 Vpravo je vidět, jak se požadavek postupně vyplňuje.
 
 **3. Chyba v datech: retry nepomůže (100247)**
