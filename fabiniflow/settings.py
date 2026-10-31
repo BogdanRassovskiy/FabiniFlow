@@ -79,7 +79,9 @@ MOCK_API_BASE_URL = os.getenv("MOCK_API_BASE_URL", f"http://127.0.0.1:{PORT}/moc
 # Jak dlouho „visí“ systém v režimu timeout (klient má vlastní kratší timeout).
 MOCK_TIMEOUT_SECONDS = 15
 
-OPENROUTER_API_KEY =os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
+if OPENROUTER_API_KEY.endswith("..."):  # nevyplněná ukázková hodnota z .env.example
+    OPENROUTER_API_KEY = ""
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 OPENROUTER_DEFAULT_MODEL = os.getenv("OPENROUTER_DEFAULT_MODEL", "anthropic/claude-haiku-5.5")
 

@@ -35,7 +35,7 @@ class OpenRouterClient:
 
     def chat(self, *, model: str, messages: list[dict], tools: list[dict]) -> dict[str, Any]:
         if not settings.OPENROUTER_API_KEY:
-            raise LLMError("Chybí OPENROUTER_API_KEY (viz .env)")
+            raise LLMError("Chybí OPENROUTER_API_KEY – doplňte skutečný klíč do .env a restartujte aplikaci")
         payload = {"model": model, "messages": messages, "tools": tools,
                    "tool_choice": "auto", "temperature": 0.2, "max_tokens": 1500}
         headers = {"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
