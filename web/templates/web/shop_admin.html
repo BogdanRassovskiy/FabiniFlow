@@ -11,7 +11,8 @@
   Přibyly nové požadavky. <a href="">Obnovit stránku</a>
 </div>
 
-<section class="card attention {% if attention %}has-items{% endif %}" id="attention">
+<section class="card attention {% if attention %}has-items{% endif %}" id="attention" data-tour-title="Vyžaduje pozornost"
+         data-tour="Rizikové akce agenta, které čekají na vaše schválení, a chaty předané člověku. Tady rozhodujete vy.">
   <h2>Vyžaduje pozornost
     {% if attention %}<span class="count-badge">{{ attention|length }}</span>{% endif %}
   </h2>
@@ -63,7 +64,8 @@
 </section>
 
 {% if live_chats %}
-<section class="card">
+<section class="card" data-tour-title="Živé chaty"
+         data-tour="Převzaté konverzace – otevřete chat a odpovídejte zákazníkovi místo agenta.">
   <h2>Živé chaty se zákazníky</h2>
   {% for c in live_chats %}
     <div class="live-chat">
@@ -81,7 +83,8 @@
 </section>
 {% endif %}
 
-<section class="card agent" id="agent-console">
+<section class="card agent" id="agent-console" data-tour-title="AI agent"
+         data-tour="Zadejte provozní úkol běžnou řečí (nebo klikněte na příklad). Agent ho řeší pomocí nástrojů a průběh vidíte krok po kroku.">
   <h2>AI agent – provozní požadavek</h2>
   <form id="agent-form" class="agent-form">
     <textarea id="agent-input" rows="2" placeholder="Např.: Zjisti, proč objednávka 100245 nebyla expedována, a pokud je problém v synchronizaci, navrhni další postup."></textarea>
@@ -102,7 +105,8 @@
   </div>
 </section>
 
-<section class="card">
+<section class="card" data-tour-title="Požadavky zákazníků"
+         data-tour="Požadavky, které agent založil ze zákaznických chatů, s prioritou a stavem.">
   <h2>Požadavky zákazníků</h2>
   {% if requests %}
     <table>
@@ -126,7 +130,8 @@
   {% endif %}
 </section>
 
-<section class="card">
+<section class="card" data-tour-title="Objednávky"
+         data-tour="Objednávky obchodu a poslední stav jejich synchronizace s externími systémy.">
   <h2>Objednávky</h2>
   <table>
     <thead>
@@ -156,7 +161,8 @@
   </table>
 </section>
 
-<div class="grid-2">
+<div class="grid-2" data-tour-title="Sklad a incidenty"
+     data-tour="Zásoby v centrálním skladu (vyprodané položky červeně) a otevřené incidenty.">
   <section class="card">
     <h2>{{ warehouse.name }}</h2>
     <p class="muted">Systém: {{ warehouse.system }}</p>

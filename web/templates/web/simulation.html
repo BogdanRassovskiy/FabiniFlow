@@ -5,7 +5,8 @@
 <p class="lead">Externí systémy jsou simulované. Tady je můžete „rozbít“ a sledovat, jak si s poruchou poradí agent.
   Každá změna se zapíše do trace logu jako akce člověka.</p>
 
-<form method="post" class="card">
+<form method="post" class="card" data-tour-title="Nastavení poruch"
+      data-tour="Pro každý externí systém zvolte režim (timeout, chyba, nestabilní), zpoždění nebo jen konkrétní objednávky a uložte. Agent pak narazí na poruchu.">
   {% csrf_token %}
   <table class="sim">
     <thead>
@@ -33,7 +34,7 @@
 </form>
 
 <div class="grid-2">
-  <section class="card">
+  <section class="card" data-tour-title="Režimy" data-tour="Vysvětlení jednotlivých typů poruch.">
     <h2>Režimy</h2>
     <dl class="facts">
       <dt>Timeout</dt><dd>Systém neodpoví dřív, než agent přestane čekat.</dd>
@@ -42,7 +43,8 @@
       <dt>Jen objednávky</dt><dd>Porucha se projeví jen u uvedených čísel, ostatní fungují.</dd>
     </dl>
   </section>
-  <section class="card">
+  <section class="card" data-tour-title="Výchozí data"
+           data-tour="Vrátí objednávky, sklady, logy i trace log do původního stavu – hodí se před novou ukázkou.">
     <h2>Výchozí data</h2>
     <p class="muted">Vrátí objednávky, platby, sklady, logy, incidenty i trace log do původního stavu.</p>
     <form method="post">

@@ -3,14 +3,15 @@
 {% block title %}Trace log{% endblock %}
 {% block content %}
 <p class="lead">Co se právě stalo a kdo o tom rozhodl.</p>
-<div class="legend">
+<div class="legend" data-tour-title="Kdo rozhodl" data-tour="Barva štítku říká, kdo krok udělal: jazykový model, pravidlo v kódu, člověk nebo systém.">
   <span class="actor LLM">LLM</span> rozhodnutí jazykového modelu
   <span class="actor SCRIPT">SCRIPT</span> deterministické pravidlo v kódu
   <span class="actor HUMAN">HUMAN</span> akce člověka
   <span class="actor SYSTEM">SYSTEM</span> událost / odpověď systému
 </div>
 
-<form method="get" class="inline filters">
+<form method="get" class="inline filters" data-tour-title="Filtry"
+      data-tour="Zúžení záznamu podle aktéra, čísla objednávky nebo ID běhu agenta.">
   <select name="actor">
     <option value="">Všichni aktéři</option>
     {% for a in actors %}<option value="{{ a }}" {% if a == actor %}selected{% endif %}>{{ a }}</option>{% endfor %}
@@ -20,7 +21,7 @@
   <button>Filtrovat</button>
 </form>
 
-<section class="card">
+<section class="card" data-tour-title="Záznam" data-tour="Kroky v časovém pořadí s odkazem na objednávku a běh agenta.">
   {% if entries %}
     <table class="trace">
       <thead><tr><th>Čas</th><th>Aktér</th><th>Událost</th><th>Popis</th><th>Objednávka</th><th>Běh</th></tr></thead>

@@ -15,7 +15,8 @@
 {% endif %}
 
 <div class="chat-layout">
-  <section class="card chat operator">
+  <section class="card chat operator" data-tour-title="Převzatý chat"
+           data-tour="Odpovídáte zákazníkovi místo agenta; agent mezitím mlčí. „Vrátit agentovi“ mu konverzaci předá zpět.">
     <header class="chat-head">
       <div><strong>Zákazník · {{ shop.name }}</strong> <small class="muted" id="op-mode"></small></div>
       <form method="post">
@@ -31,7 +32,8 @@
   </section>
 
   <div class="side">
-    <section class="card request-draft">
+    <section class="card request-draft" data-tour-title="Co agent zjistil"
+             data-tour="Údaje, které agent z rozhovoru získal před předáním.">
       <header class="ticket-head">
         <h2>Co agent zjistil</h2>
         <span class="pill neutral" id="ticket-status"></span>

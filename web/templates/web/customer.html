@@ -6,7 +6,8 @@
 {% include "web/_shop_switch.html" %}
 
 <div class="chat-layout">
-  <section class="card chat">
+  <section class="card chat" data-tour-title="Chat se zákazníkem"
+           data-tour="Tady píšete jako zákazník. 📎 přiloží snímek obrazovky, „Nový rozhovor“ začne od začátku. Když agent nestačí, předá chat člověku.">
     <header class="chat-head">
       <div>
         <strong>Podpora {{ shop.name }}</strong>
@@ -30,7 +31,8 @@
   </section>
 
   <div class="side">
-    <section class="card request-draft" id="ticket">
+    <section class="card request-draft" id="ticket" data-tour-title="Rozpracovaný požadavek"
+             data-tour="Agent sem průběžně doplňuje údaje z rozhovoru a ukazuje, co ještě chybí. Hotový požadavek se objeví v Administraci obchodů.">
       <header class="ticket-head">
         <h2>Rozpracovaný požadavek</h2>
         <span class="pill neutral" id="ticket-status">Čeká na zákazníka</span>
@@ -45,7 +47,8 @@
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" data-tour-title="Ukázky"
+             data-tour="Hotové zprávy a snímky obrazovky – kliknutím je vložíte do chatu.">
       <h2>Ukázkové zprávy</h2>
       <p class="muted">Kliknutím vložíte do chatu.</p>
       <div class="chips">

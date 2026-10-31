@@ -1,5 +1,6 @@
 {% load fabini %}
-<div class="shop-switch">
+<div class="shop-switch" data-tour-title="Výběr obchodu"
+     data-tour="Přepínání mezi e-shopy. Každý má vlastního asistenta, objednávky a požadavky.">
   {% for s in shops %}
     <a href="?shop={{ s.shop_id }}" class="{% if s.shop_id == shop.shop_id %}active{% endif %}">
       <strong>{{ s.name }}

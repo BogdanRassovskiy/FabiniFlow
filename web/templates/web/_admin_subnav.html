@@ -1,4 +1,5 @@
-<nav class="subnav">
+<nav class="subnav" data-tour-title="Podzáložky administrace"
+     data-tour="Obchody = provozní přehled vybraného e-shopu. Simulace externích systémů = nastavení poruch, na kterých si vyzkoušíte reakce agenta.">
   <a href="{% url 'web:shop_admin' %}" class="{% if subtab == 'shop' %}active{% endif %}">Obchody</a>
   <a href="{% url 'web:simulation' %}" class="{% if subtab == 'simulation' %}active{% endif %}">Simulace externích systémů</a>
 </nav>

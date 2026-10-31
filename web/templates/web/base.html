@@ -6,28 +6,38 @@
   <title>{% block title %}FabiniFlow{% endblock %} · AI Operations Agent</title>
   <link rel="stylesheet" href="{% static 'web/app.css' %}?v={{ asset_version }}">
 </head>
-<body>
+<body data-tour-page="{{ request.resolver_match.url_name }}">
   <header class="topbar">
     <div class="brand">Fabini<span>Flow</span></div>
     <nav class="tabs">
-      <a href="{% url 'web:customer' %}" class="{% if tab == 'customer' %}active{% endif %}">Zákazník</a>
-      <a href="{% url 'web:shop_admin' %}" class="{% if tab == 'shop_admin' %}active{% endif %}">Administrace obchodů
+      <a href="{% url 'web:customer' %}" class="{% if tab == 'customer' %}active{% endif %}"
+         data-tour-global data-tour-title="Zákazník"
+         data-tour="Pohled zákazníka: chat s virtuálním asistentem obchodu. Agent během rozhovoru vyplní a založí požadavek.">Zákazník</a>
+      <a href="{% url 'web:shop_admin' %}" class="{% if tab == 'shop_admin' %}active{% endif %}"
+         data-tour-global data-tour-title="Administrace obchodů"
+         data-tour="Provozní pohled: schvalování, převzaté chaty, AI agent pro provozní úkoly, objednávky, sklad a incidenty. Červený odznak ukazuje, kolik položek čeká na člověka. Uvnitř je i simulace externích systémů.">Administrace obchodů
         <span class="count-badge" id="attention-badge" title="Čeká na schválení / pozornost"
               {% if not attention_counts.total %}hidden{% endif %}>{{ attention_counts.total }}</span></a>
-      <a href="{% url 'web:trace' %}" class="{% if tab == 'trace' %}active{% endif %}">Trace log</a>
+      <a href="{% url 'web:trace' %}" class="{% if tab == 'trace' %}active{% endif %}"
+         data-tour-global data-tour-title="Trace log"
+         data-tour="Záznam všech kroků – co se stalo a kdo o tom rozhodl: LLM, skript, člověk nebo systém.">Trace log</a>
     </nav>
-    <div class="model-picker">
+    <div class="model-picker" data-tour-global data-tour-title="Model agenta"
+       data-tour="Jazykový model (OpenRouter), se kterým agent pracuje. Volba platí pro další běhy; 🖼 = model umí číst obrázky.">
       {% csrf_token %}
       <label for="model-select" class="muted">Model</label>
       <select id="model-select" title="Model agenta (OpenRouter) – jen modely s tool calling"></select>
       <span class="pill bad" id="no-key" hidden>Chybí API klíč</span>
       <button type="button" class="ghost small" id="demo-reset"
               title="Vrátí objednávky, chaty, schválení, simulaci i trace do výchozího stavu">↺ Reset dema</button>
+      <button type="button" class="ghost small tour-help" id="tour-help" title="Průvodce rozhraním"
+              data-tour-global data-tour-title="Nápověda" data-tour="Tímto tlačítkem průvodce kdykoli spustíte znovu.">?</button>
     </div>
   </header>
   <main>
     {% block content %}{% endblock %}
   </main>
+  <script src="{% static 'web/tour.js' %}?v={{ asset_version }}" defer></script>
   <script>
     // Živý odznak: každé 3 s zjistí počet položek čekajících na člověka.
     (function () {
