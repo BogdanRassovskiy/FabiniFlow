@@ -144,7 +144,7 @@ Proto jsou v trace odlišené rozhodnutí LLM a zásahy SCRIPT.
 - **Výběr modelu** z OpenRouter přímo v UI (jen modely s podporou nástrojů, s cenou).
 - **Odolný chat.** Více zpráv rychle za sebou se neztratí ani nespustí dva běhy; když zákazník dopíše zprávu,
   zatímco agent přemýšlí, zastaralá odpověď se neodešle a agent odpoví s aktuální historií.
-- **Pohodlí pro demo:** tlačítko Reset dema, panel testovacích zákazníků, administrace se obnovuje sama
+- **Pohodlí pro demo:** průvodce rozhraním při první návštěvě (tlačítko **?** ho spustí znovu), tlačítko Reset dema, panel testovacích zákazníků, administrace se obnovuje sama
   (např. stav objednávky po schváleném retry), průběh agenta lze skrýt.
 
 ## Omezení
