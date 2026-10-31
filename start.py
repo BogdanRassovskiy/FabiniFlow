@@ -6,8 +6,8 @@ Spuštění FabiniFlow jedním příkazem:  python3 start.py
 - vytvoří .env z .env.example (doplňte OPENROUTER_API_KEY),
 - spustí aplikaci na http://127.0.0.1:4445 (port lze změnit proměnnou FABINI_PORT).
 
-Na serveru nastavte v .env FABINI_HOST=0.0.0.0, DJANGO_DEBUG=0, DJANGO_SECRET_KEY
-a DJANGO_ALLOWED_HOSTS s doménou (za HTTPS proxy i CSRF_TRUSTED_ORIGINS).
+Na serveru stačí zkopírovat .env.example do .env a doplnit OPENROUTER_API_KEY –
+aplikace pak naslouchá na 0.0.0.0:4445 a otevírá se adresou serveru s portem.
 
 Volby:  --reset   obnoví data z data/seed před spuštěním
 """

@@ -16,10 +16,8 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-insecure-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
-# Na serveru doplňte doménu do DJANGO_ALLOWED_HOSTS (čárkami), za HTTPS proxy i CSRF_TRUSTED_ORIGINS.
-ALLOWED_HOSTS = ["localhost", "127.0.0.1",
-                 *[h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]]
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+# Demo: aplikace se otevírá přímo adresou serveru s portem, proto povolíme libovolný host.
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     "django.contrib.staticfiles",
@@ -33,7 +31,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
+    # CSRF ochrana je pro demo vypnutá (bez přihlášení a domény by jen překážela).
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
