@@ -43,7 +43,7 @@ Volba `--reset` vrátí data do výchozího stavu, stejně jako tlačítko Reset
 | Záložka | K čemu slouží |
 |---|---|
 | **Zákazník** | Chat zákazníka s obchodem fabini.cz nebo fabini.sk. Agent během rozhovoru vyplní a založí požadavek. |
-| **Administrace obchodů** | Konzole agenta pro interní tým, žádosti o schválení (červený odznak), objednávky, sklad, požadavky a incidenty. |
+| **Administrace obchodů** | Konzole agenta pro interní tým, žádosti o schválení (červený odznak), převzaté chaty, objednávky, sklad, požadavky a incidenty. Data se obnovují sama. |
 | **Administrace → Simulace** | Zapínání výpadků externích systémů: timeout, chyba 500, nedostupnost 503, občasné chyby, zpoždění. |
 | **Trace** | Historie všech rozhodnutí a volání. U každého záznamu je vidět, kdo rozhodl: **LLM**, **SCRIPT** (kód), **HUMAN** (člověk) nebo **SYSTEM** (odpověď externího systému). |
 
@@ -59,16 +59,16 @@ Model se vybírá vpravo nahoře, vedle je tlačítko **↺ Reset dema**. Výcho
 | Vyhodnotit výsledky a pokračovat | Smyčka agenta v `agent/runner.py` se opakuje, dokud model volá nástroje. Po úspěšném `retry_sync` si například znovu načte stav. |
 | Provést povolenou akci nebo požádat o schválení | Čtení proběhne hned. `retry_sync` a `create_ticket` jsou rizikové: běh se pozastaví, v administraci se objeví žádost a po schválení nebo zamítnutí agent pokračuje. |
 | Vrátit strukturovaný výsledek s kroky | Agent končí voláním `submit_result` (stav, shrnutí, příčina, doporučení). Provedené akce a kroky doplní kód z historie, model je nemůže vymyslet. |
-| Nástroje get_order … create_ticket | Všech šest je implementováno jako HTTP volání na simulované systémy (`simulator/`).  Navíc `search_orders`: když v požadavku chybí číslo objednávky, agent ji najde podle jména, e-mailu nebo města. |
+| Nástroje get_order … create_ticket | Všech šest je implementováno jako HTTP volání na simulované systémy (`simulator/`). Navíc `search_orders`: když v požadavku chybí číslo objednávky, agent ji najde podle jména, e-mailu nebo města. |
 | Ošetření chyb | Timeout 5 s, přechodné chyby (502/503/504, síť) se opakují s backoffem. Trvalé chyby dostane agent jako výsledek a musí s nimi pracovat. Chyby modelu se také opakují a nakonec běh korektně ukončí. |
 | Žádné nekonečné smyčky | Max. 12 kroků modelu a 30 volání nástrojů na běh. Každý nástroj má vlastní limit (`retry_sync` a `create_ticket` jen 1×). Stejné čtení se neprovede dvakrát, vrátí se z cache. |
 | Schvalování rizikových operací | Fronta žádostí v administraci. O každé se rozhoduje jen jednou a rozhodnutí se zapíše do trace jako HUMAN. |
-| Historie rozhodnutí a volání | `data/runtime/trace.json`, záložka Trace a časová osa přímo v konzoli agenta. |
+| Historie rozhodnutí a volání | `data/runtime/trace.json`, záložka Trace a časová osa přímo v konzoli agenta (lze ji skrýt tlačítkem **Skrýt průběh**, pak je vidět jen výsledek). |
 
 ## Ukázkové scénáře
 
-Všechny jsou připravené jako tlačítka v konzoli agenta (Administrace obchodů).
-Před ukázkou klikněte na **↺ Reset dema** vpravo nahoře.
+Scénáře 1, 3 a 4 jsou připravené jako tlačítka v konzoli agenta (Administrace obchodů),
+pro scénář 2 jsou ukázkové zprávy přímo u chatu. Před ukázkou klikněte na **↺ Reset dema** vpravo nahoře.
 
 **1. Úspěch: přechodná chyba synchronizace (100245)**
 > Zjisti, proč objednávka 100245 nebyla expedována, a pokud je problém v synchronizaci, navrhni další postup.
@@ -81,8 +81,9 @@ agent ověří nový stav a vrátí `resolved`.
 Na záložce Zákazník (fabini.cz) napište *„Objednávku 100245 jsem zaplatil, ale nebyla odeslána“*
 nebo přiložte snímek potvrzení platby. Agent zjistí typ požadavku a vyžádá si e-mail z objednávky
 (pro 100245 je to `tomas.prochazka@example.cz`; e-maily všech testovacích zákazníků jsou v panelu
-**Testovací zákazníci** vpravo a v přehledu objednávek v administraci). Po ověření prověří objednávku a založí požadavek `REQ-…`.
-Vpravo je vidět, jak se požadavek postupně vyplňuje.
+**Testovací zákazníci** vpravo a v přehledu objednávek v administraci). Po ověření prověří objednávku,
+případně navrhne `retry_sync` – zákazník mezitím dostane jen „ověřuji to s kolegy“ a v administraci
+naskočí žádost o schválení. Nakonec založí požadavek `REQ-…`. Vpravo je vidět, jak se požadavek postupně vyplňuje.
 
 **3. Chyba v datech: retry nepomůže (100247)**
 > Proč objednávka 100247 stále není ve skladu? Vyřeš to.
@@ -94,9 +95,12 @@ Po schválení vznikne incident `INC-…` a výsledek je `escalated`.
 **4. Chyba: neexistující objednávka a výpadek systému**
 > Zkontroluj objednávku 100999.
 
-Systémy vrátí 404 a agent to korektně vyhodnotí, nic si nevymýšlí.
-Pro výpadek zapněte v Simulaci např. sklad (WMS) na „nedostupný 503“ a spusťte scénář 1.
-V trace je vidět opakování s backoffem a výsledek, který s výpadkem počítá.
+Všechny systémy vrátí 404. Agent nic nevymýšlí, nespustí žádnou akci a vrátí `failed`
+s doporučením ověřit číslo objednávky.
+
+Výpadek: v Simulaci přepněte **Sklad / WMS** na „nedostupný (503)“ a spusťte scénář 1.
+Klient 3× zkusí WMS s backoffem (v trace jako SCRIPT `api_retry`), agent pak retry vědomě nenavrhne,
+protože by při údržbě skladu selhal, a vrátí `escalated` s postupem: počkat na konec údržby, pak jeden retry.
 
 ## Architektura
 
@@ -138,9 +142,14 @@ Proto jsou v trace odlišené rozhodnutí LLM a zásahy SCRIPT.
 - **Dva obchody** (fabini.cz v češtině a Kč, fabini.sk ve slovenštině a €) s vlastními objednávkami a skladem.
 - **Simulace výpadků** nastavitelná z administrace, i jen pro vybrané objednávky.
 - **Výběr modelu** z OpenRouter přímo v UI (jen modely s podporou nástrojů, s cenou).
+- **Odolný chat.** Více zpráv rychle za sebou se neztratí ani nespustí dva běhy; když zákazník dopíše zprávu,
+  zatímco agent přemýšlí, zastaralá odpověď se neodešle a agent odpoví s aktuální historií.
+- **Pohodlí pro demo:** tlačítko Reset dema, panel testovacích zákazníků, administrace se obnovuje sama
+  (např. stav objednávky po schváleném retry), průběh agenta lze skrýt.
 
 ## Omezení
 
 Jde o demo, ne o produkční řešení. Administrace nemá přihlášení, CSRF ochrana je vypnutá,
-aplikace běží na vývojovém serveru Django v jednom procesu (agent běží ve vláknech)
-a data jsou sdílená všemi návštěvníky.
+aplikace běží na vývojovém serveru Django v jednom procesu (agent běží ve vláknech),
+data jsou sdílená všemi návštěvníky a volání modelu jdou na jeden OpenRouter klíč s limitem.
+Kontakty a údaje o FABINI v `agent/context/fabini.md` jsou ukázkové.
