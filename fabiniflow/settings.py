@@ -16,7 +16,10 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-insecure-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+# Na serveru doplňte doménu do DJANGO_ALLOWED_HOSTS (čárkami), za HTTPS proxy i CSRF_TRUSTED_ORIGINS.
+ALLOWED_HOSTS = ["localhost", "127.0.0.1",
+                 *[h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
 
 INSTALLED_APPS = [
     "django.contrib.staticfiles",
@@ -72,7 +75,9 @@ DATA_DIR = Path(os.getenv("FABINI_DATA_DIR", BASE_DIR / "data" / "runtime"))
 
 # Simulované externí systémy (aplikace simulator). V produkci by se zde
 # jen změnila adresa na skutečné API – agent zůstává stejný.
-MOCK_API_BASE_URL = os.getenv("MOCK_API_BASE_URL", "http://127.0.0.1:8000/mock")
+# Port aplikace (start.py). Simulované externí systémy běží ve stejném procesu pod /mock/.
+PORT = int(os.getenv("FABINI_PORT", "4445"))
+MOCK_API_BASE_URL = os.getenv("MOCK_API_BASE_URL", f"http://127.0.0.1:{PORT}/mock")
 # Jak dlouho „visí“ systém v režimu timeout (klient má vlastní kratší timeout).
 MOCK_TIMEOUT_SECONDS = 15
 

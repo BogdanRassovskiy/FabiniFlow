@@ -39,7 +39,7 @@ class OpenRouterClient:
         payload = {"model": model, "messages": messages, "tools": tools,
                    "tool_choice": "auto", "temperature": 0.2, "max_tokens": 1500}
         headers = {"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
-                   "HTTP-Referer": "http://localhost:8000", "X-Title": "FabiniFlow"}
+                   "HTTP-Referer": f"http://localhost:{settings.PORT}", "X-Title": "FabiniFlow"}
         last_error = ""
         for attempt in range(self.max_retries + 1):
             try:
