@@ -43,6 +43,9 @@ class RequestType:
     fields: tuple[Field, ...] = field(default_factory=tuple)
 
 
+# Údaje k ověření zákazníka – dají se zapsat hned, ještě než je jasný typ požadavku.
+IDENTITY_FIELDS = (ORDER_ID, EMAIL)
+
 REQUEST_TYPES: dict[str, RequestType] = {t.key: t for t in [
     RequestType(
         "order_status", "Stav objednávky",

@@ -255,4 +255,30 @@
   if (runId) watch();
 })();
 </script>
+<script>
+// Živá data: agent mění objednávky na pozadí (např. po schválení retry_sync),
+// proto se karty mimo konzoli agenta každé 3 s obnoví z čerstvé verze stránky.
+(function () {
+  const parts = (doc) => [...doc.querySelectorAll("main > section.card, main > .grid-2")]
+    .filter((el) => el.id !== "agent-console");
+  async function refresh() {
+    if (document.hidden || document.activeElement?.closest("form:not(#agent-form)")) return;
+    try {
+      const res = await fetch(location.href, {cache: "no-store"});
+      const fresh = parts(new DOMParser().parseFromString(await res.text(), "text/html"));
+      const current = parts(document);
+      if (fresh.length !== current.length) {
+        // Přibyla nebo zmizela celá karta (např. živý chat) – obnovíme stránku, pokud uživatel nepíše.
+        if (!document.getElementById("agent-input").value.trim()) location.reload();
+        return;
+      }
+      fresh.forEach((el, i) => {
+        if (el.innerHTML !== current[i].innerHTML) current[i].replaceWith(document.importNode(el, true));
+      });
+      document.getElementById("attention-stale")?.setAttribute("hidden", "");
+    } catch (e) { /* server dočasně nedostupný – zkusíme příště */ }
+  }
+  setInterval(refresh, 3000);
+})();
+</script>
 {% endblock %}

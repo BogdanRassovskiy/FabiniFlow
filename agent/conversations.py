@@ -97,8 +97,11 @@ def update_request_field(conversation_id: str, key: str, value: str, *,
     _ensure_editable(conv)
     draft = conv["draft"]
     if not draft["type"]:
-        raise DraftError("Nejdřív urči typ požadavku (set_request_type).")
-    spec = {f.key: f for f in request_types.get(draft["type"]).fields}.get(key)
+        spec = {f.key: f for f in request_types.IDENTITY_FIELDS}.get(key)
+        if spec is None:
+            raise DraftError("Před určením typu lze zapsat jen order_id a email. Ostatní údaje po set_request_type.")
+    else:
+        spec = {f.key: f for f in request_types.get(draft["type"]).fields}.get(key)
     if spec is None:
         raise DraftError(f"Typ {draft['type']} nemá pole {key!r}. Povolená pole: {', '.join(f.key for f in request_types.get(draft['type']).fields)}")
 
@@ -221,13 +224,10 @@ def order_id_of(conv) -> str | None:
 def draft_summary(conv: dict[str, Any]) -> dict[str, Any]:
     """Stav draftu pro UI i pro agenta (výsledek nástrojů): co je vyplněné a co chybí."""
     draft = conv["draft"]
-    if not draft["type"]:
-        return {"type": None, "type_label": None, "fields": [], "missing": [], "filled": 0, "total": 0,
-                "ready": False, "locked": draft["locked"], "status": conv["status"], "request_id": conv["request_id"]}
-
-    rtype = request_types.get(draft["type"])
+    rtype = request_types.get(draft["type"]) if draft["type"] else None
+    specs = rtype.fields if rtype else [f for f in request_types.IDENTITY_FIELDS if f.key in draft["fields"]]
     rows, missing = [], []
-    for spec in rtype.fields:
+    for spec in specs:
         state = draft["fields"].get(spec.key)
         rows.append({
             "key": spec.key, "label": spec.label, "hint": spec.hint, "required": spec.required,
@@ -238,8 +238,11 @@ def draft_summary(conv: dict[str, Any]) -> dict[str, Any]:
             "error": state["error"] if state else None,
             "verifiable": spec.verify is not None,
         })
-        if spec.required and not (state and state["verified"]):
+        if rtype and spec.required and not (state and state["verified"]):
             missing.append(spec.key)
+    if not rtype:
+        return {"type": None, "type_label": None, "fields": rows, "missing": ["type"], "filled": 0, "total": 0,
+                "ready": False, "locked": draft["locked"], "status": conv["status"], "request_id": conv["request_id"]}
 
     required = [r for r in rows if r["required"]]
     return {

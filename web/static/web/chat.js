@@ -34,12 +34,12 @@ window.FabiniChat = (function () {
     else if (d.type) { pill.className = "pill warn"; pill.textContent = "Doplňuje se"; }
     else { pill.className = "pill neutral"; pill.textContent = "Čeká na zákazníka"; }
 
-    if (!d.type) { body.innerHTML = emptyHtml; return {}; }
+    if (!d.type && !d.fields.length) { body.innerHTML = emptyHtml; return {}; }
     const pct = d.total ? Math.round(100 * d.filled / d.total) : 0;
     body.innerHTML = `
-      <div class="ticket-type"><span class="muted">Typ</span><strong>${esc(d.type_label)}</strong></div>
-      <div class="progress"><div style="width:${pct}%"></div></div>
-      <small class="muted">${d.filled} / ${d.total} povinných údajů</small>
+      <div class="ticket-type"><span class="muted">Typ</span><strong>${d.type ? esc(d.type_label) : '<span class="placeholder">zatím neurčen</span>'}</strong></div>
+      ${d.type ? `<div class="progress"><div style="width:${pct}%"></div></div>
+      <small class="muted">${d.filled} / ${d.total} povinných údajů</small>` : ""}
       <dl class="ticket-fields">
         ${d.fields.map((f) => `
           <div class="ticket-field ${f.value ? "filled" : ""} ${previous[f.key] !== f.value && f.value ? "flash-in" : ""}">
