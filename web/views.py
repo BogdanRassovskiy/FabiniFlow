@@ -222,6 +222,14 @@ def _conversation_or_404(conversation_id):
         raise Http404("Konverzace neexistuje")
 
 
+@require_POST
+def demo_reset(request):
+    """Tlačítko „Reset dema“ v horní liště: vrátí všechna data do výchozího stavu."""
+    storage.reset_from_seed()
+    trace.record(trace.Actor.HUMAN, "data_reset", "Demo obnoveno do výchozího stavu (tlačítko v horní liště)")
+    return JsonResponse({"ok": True})
+
+
 @require_GET
 def attention_api(request):
     """Počty čekajících položek – UI je periodicky načítá kvůli odznaku na záložce."""

@@ -21,6 +21,8 @@
       <label for="model-select" class="muted">Model</label>
       <select id="model-select" title="Model agenta (OpenRouter) – jen modely s tool calling"></select>
       <span class="pill bad" id="no-key" hidden>Chybí API klíč</span>
+      <button type="button" class="ghost small" id="demo-reset"
+              title="Vrátí objednávky, chaty, schválení, simulaci i trace do výchozího stavu">↺ Reset dema</button>
     </div>
   </header>
   <main>
@@ -66,6 +68,14 @@
         headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value},
       }));
     })();
+
+    // Reset dema: všechna data zpět do výchozího stavu, pak znovu načíst stránku.
+    document.getElementById("demo-reset").addEventListener("click", async (e) => {
+      if (!confirm("Obnovit demo do výchozího stavu? Smažou se chaty, požadavky, schválení, incidenty i trace.")) return;
+      e.target.disabled = true; e.target.textContent = "Obnovuji…";
+      await fetch("{% url 'web:demo_reset' %}", {method: "POST"});
+      location.reload();
+    });
   </script>
 </body>
 </html>

@@ -20,5 +20,6 @@ urlpatterns = [
     path("api/agent/runs/<str:run_id>/", views.agent_run_state, name="agent_run_state"),
     path("api/models/", views.models_api, name="models_api"),
     path("api/attention/", views.attention_api, name="attention_api"),
+    path("api/demo/reset/", views.demo_reset, name="demo_reset"),
     path("trace/", views.trace_log, name="trace"),
 ]

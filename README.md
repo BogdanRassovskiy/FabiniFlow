@@ -7,7 +7,21 @@ vyhodnotí je, rizikové kroky nechá schválit člověkem a vrátí strukturova
 Vše běží v jedné Django aplikaci. Externí systémy (e-shop, platby, sklad, integrace, helpdesk)
 jsou simulované jako HTTP API, ve kterém si lze zapnout výpadky a zpoždění.
 
-## Spuštění
+## Živé demo
+
+**http://139.59.136.141:4445/**
+
+| Záložka | Adresa |
+|---|---|
+| Zákazník (chat) | http://139.59.136.141:4445/zakaznik/ |
+| Administrace obchodů (konzole agenta, schvalování) | http://139.59.136.141:4445/administrace/ |
+| Simulace výpadků | http://139.59.136.141:4445/administrace/simulace/ |
+| Trace log | http://139.59.136.141:4445/trace/ |
+
+Tlačítko **↺ Reset dema** vpravo nahoře vrátí všechna data do výchozího stavu
+(objednávky, chaty, schválení, incidenty, nastavení simulace i trace). Doporučuji ho použít před každou ukázkou.
+
+## Spuštění u sebe
 
 Potřeba: Python 3.12+ a klíč k [OpenRouter](https://openrouter.ai/keys).
 
@@ -18,11 +32,11 @@ cp .env.example .env        # doplňte OPENROUTER_API_KEY
 python3 start.py --reset
 ```
 
-Aplikace běží na `http://<adresa-serveru>:4445/`. Lokálně stačí v `.env` nastavit
-`FABINI_HOST=127.0.0.1` a otevřít `http://127.0.0.1:4445/`.
+Aplikace pak běží na `http://<adresa-serveru>:4445/` (port 4445 musí být povolený ve firewallu).
+Lokálně stačí v `.env` nastavit `FABINI_HOST=127.0.0.1` a otevřít `http://127.0.0.1:4445/`.
 
 `start.py` při prvním spuštění vytvoří `.venv` a nainstaluje závislosti.
-Volba `--reset` vrátí data do výchozího stavu, hodí se před každou ukázkou.
+Volba `--reset` vrátí data do výchozího stavu, stejně jako tlačítko Reset dema v aplikaci.
 
 ## Co v aplikaci najdete
 
@@ -33,7 +47,7 @@ Volba `--reset` vrátí data do výchozího stavu, hodí se před každou ukázk
 | **Administrace → Simulace** | Zapínání výpadků externích systémů: timeout, chyba 500, nedostupnost 503, občasné chyby, zpoždění. |
 | **Trace** | Historie všech rozhodnutí a volání. U každého záznamu je vidět, kdo rozhodl: **LLM**, **SCRIPT** (kód), **HUMAN** (člověk) nebo **SYSTEM** (odpověď externího systému). |
 
-Model se vybírá vpravo nahoře. Výchozí je `anthropic/claude-haiku-5.5`, levný a s podporou obrázků.
+Model se vybírá vpravo nahoře, vedle je tlačítko **↺ Reset dema**. Výchozí je `anthropic/claude-haiku-5.5`, levný a s podporou obrázků.
 
 ## Splnění zadání
 
@@ -54,7 +68,7 @@ Model se vybírá vpravo nahoře. Výchozí je `anthropic/claude-haiku-5.5`, lev
 ## Ukázkové scénáře
 
 Všechny jsou připravené jako tlačítka v konzoli agenta (Administrace obchodů).
-Před ukázkou spusťte `python3 start.py --reset`.
+Před ukázkou klikněte na **↺ Reset dema** vpravo nahoře.
 
 **1. Úspěch: přechodná chyba synchronizace (100245)**
 > Zjisti, proč objednávka 100245 nebyla expedována, a pokud je problém v synchronizaci, navrhni další postup.
